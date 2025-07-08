@@ -127,37 +127,9 @@
         margin-top: 10px;
       }
     }
-
-    #btnAdmin {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background-color: #007700;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      line-height: 1;
-    }
-
-    #btnAdmin:hover {
-      background-color: #005500;
-    }
   </style>
 </head>
 <body>
-
-  <button id="btnAdmin" title="Panel de Administración">A</button>
-
   <div class="contenedor">
     <div>
       <h1>Verificación de Afiliados</h1>
@@ -180,12 +152,9 @@
     const form = document.getElementById('formulario');
     const resultadoDiv = document.getElementById('resultado');
     const descargarBtn = document.getElementById('descargar');
-    const btnAdmin = document.getElementById('btnAdmin');
     let dniAfiliado = '';
-    let adminWin;
 
     const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
-    const PIN_CORRECTO = '1906';
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -243,22 +212,6 @@
       document.body.appendChild(form);
       form.submit();
       document.body.removeChild(form);
-    });
-
-    btnAdmin.addEventListener('click', () => {
-      const pin = prompt('Ingrese PIN de administrador:');
-      if (!pin) return;
-
-      if (pin === PIN_CORRECTO) {
-        sessionStorage.setItem('pin-validado', 'true');
-        if (adminWin && !adminWin.closed) {
-          adminWin.focus();
-        } else {
-          adminWin = window.open('admin.html', '_blank');
-        }
-      } else {
-        alert('PIN incorrecto');
-      }
     });
   </script>
 </body>
