@@ -48,6 +48,8 @@
     const resultadoDiv = document.getElementById('resultado');
     const descargarBtn = document.getElementById('descargar');
     let dniAfiliado = '';
+    
+    // URL de tu backend en Railway
     const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
 
     form.addEventListener('submit', async (e) => {
@@ -60,9 +62,15 @@
       try {
         const response = await fetch(`${urlBase}/verificar`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ dni })
         });
+
+        if (!response.ok) {
+          throw new Error('Error en la respuesta del servidor');
+        }
 
         const data = await response.json();
 
@@ -82,7 +90,7 @@
           form.reset();
         }
       } catch (error) {
-        resultadoDiv.textContent = '⚠️ Error al conectar con el servidor.';
+        resultadoDiv.textContent = '⚠️ Error al conectar con el servidor. Revisa CORS y que el backend esté activo.';
         resultadoDiv.className = 'error';
         console.error(error);
       }
