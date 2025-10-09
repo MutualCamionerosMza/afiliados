@@ -23,6 +23,7 @@
       display: block;
     }
     .panel {
+      display: flex;
       flex-wrap: wrap;
       gap: 20px;
     }
@@ -65,12 +66,8 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    .exito {
-      color: green;
-    }
-    .error {
-      color: red;
-    }
+    .exito { color: green; }
+    .error { color: red; }
     .registro {
       background: white;
       padding: 15px;
@@ -86,14 +83,13 @@
       padding-bottom: 5px;
     }
     @media (max-width: 768px) {
-      .panel {
-        flex-direction: column;
-      }
+      .panel { flex-direction: column; }
     }
   </style>
 </head>
 <body>
   <h1>PANEL DE ADMINISTRADORES</h1>
+
   <div id="pin-form" class="visible">
     <form onsubmit="return verificarPin()">
       <label>Ingrese PIN de administrador:</label>
@@ -104,13 +100,12 @@
   </div>
 
   <div class="panel" id="admin-panel">
-    <!-- Todo el contenido del panel original se mantiene -->
-    <!-- (Cuerpo del admin que ya incluía agregar, editar, eliminar, logs, etc.) -->
+    <!-- Aquí van tus formularios de agregar, editar, eliminar y logs -->
   </div>
 
   <script>
     const PIN = '1906';
-    const api = 'https://afiliados-verificacion-production.up.railway.app';
+    const API_URL = 'https://afiliados-verificacion-production.up.railway.app';
 
     function verificarPin() {
       const input = document.getElementById('pin-input').value.trim();
@@ -128,15 +123,14 @@
     }
 
     function iniciarSesion() {
-      document.body.classList.add('visible');
       cargarLogs();
       let inactividadTimer = setTimeout(cerrarSesion, 5 * 60 * 1000);
-      document.addEventListener('mousemove', reset);
-      document.addEventListener('keydown', reset);
-      function reset() {
-        clearTimeout(inactividadTimer);
-        inactividadTimer = setTimeout(cerrarSesion, 5 * 60 * 1000);
-      }
+      ['mousemove','keydown','click','scroll'].forEach(evt => {
+        document.addEventListener(evt, () => {
+          clearTimeout(inactividadTimer);
+          inactividadTimer = setTimeout(cerrarSesion, 5 * 60 * 1000);
+        });
+      });
     }
 
     function cerrarSesion() {
@@ -144,11 +138,27 @@
       location.reload();
     }
 
-    function cargarLogs() {
-      // Reutiliza tu función original
+    async function cargarLogs() {
+      try {
+        const res = await fetch(`${API_URL}/admin/listar-logs`, {
+          headers: { 'x-admin-pin': PIN }
+        });
+        const logs = await res.json();
+        const cont = document.createElement('div');
+        cont.className = 'registro';
+        logs.forEach(log => {
+          const div = document.createElement('div');
+          div.className = 'registro-entry';
+          div.textContent = `${log.fecha} | ${log.accion} | ${log.nombre_completo} | DNI: ${log.dni} | N° Afiliado: ${log.nro_afiliado}`;
+          cont.appendChild(div);
+        });
+        document.getElementById('admin-panel').appendChild(cont);
+      } catch (err) {
+        console.error('Error cargando logs:', err);
+      }
     }
 
-    // Si el pin ya fue validado, salteamos formulario
+    // Auto-login si ya se validó el PIN
     if (sessionStorage.getItem('pin-validado') === 'true') {
       document.getElementById('pin-form').classList.remove('visible');
       document.getElementById('admin-panel').classList.add('visible');
