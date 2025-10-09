@@ -9,6 +9,7 @@
       margin: 0;
       padding: 0;
       height: 100vh;
+      overflow: hidden;
       font-family: Arial, sans-serif;
       background-color: #e6e6e6;
       display: flex;
@@ -21,7 +22,7 @@
       width: 800px;
       max-height: 90vh;
       border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
       padding: 30px 40px 40px 40px;
       display: flex;
       flex-direction: column;
@@ -30,77 +31,17 @@
       overflow: hidden;
     }
 
-    h1 {
-      color: #003366;
-      font-size: 32px;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    form {
-      flex-grow: 1;
-    }
-
-    label {
-      font-size: 20px;
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      font-size: 18px;
-      margin-top: 5px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 14px;
-      background-color: #003366;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 18px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background-color: #0055aa;
-    }
-
-    #resultado {
-      margin-top: 15px;
-      font-weight: bold;
-      font-size: 18px;
-      text-align: center;
-    }
-
+    h1 { color: #003366; font-size: 32px; text-align: center; margin-bottom: 10px; }
+    form { flex-grow: 1; }
+    label { font-size: 20px; font-weight: bold; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 12px; font-size: 18px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; }
+    button { margin-top: 20px; padding: 14px; background-color: #003366; color: white; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; width: 100%; }
+    button:hover { background-color: #0055aa; }
+    #resultado { margin-top: 15px; font-weight: bold; font-size: 18px; text-align: center; }
     #resultado.afiliado { color: green; }
     #resultado.no-afiliado { color: red; }
-    #resultado.error { color: orange; }
-
-    .logo-bottom {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 15px;
-    }
-
-    .logo-bottom img {
-      max-height: 340px;
-      width: auto;
-      object-fit: contain;
-      display: block;
-      margin-top: 15px;
-    }
-
+    .logo-bottom { width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 15px; }
+    .logo-bottom img { max-height: 340px; width: auto; object-fit: contain; display: block; margin-top: 15px; }
     @media (max-width: 850px) {
       .contenedor { width: 95%; height: auto; max-height: none; padding: 20px; }
       h1 { font-size: 28px; }
@@ -118,11 +59,9 @@
         <input type="text" id="dni" name="dni" required />
         <button type="submit">Verificar</button>
       </form>
-
       <div id="resultado"></div>
       <button id="descargar" style="display: none;">Ver Credencial</button>
     </div>
-
     <div class="logo-bottom">
       <img src="https://i.imgur.com/ZXJvT6b.png" alt="Logo de la empresa" />
     </div>
@@ -134,7 +73,8 @@
     const descargarBtn = document.getElementById('descargar');
     let dniAfiliado = '';
 
-    const urlBase = 'https://verificacion-afiliados-production.up.railway.app';
+    // URL de tu backend en Railway
+    const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -154,16 +94,10 @@
         const data = await response.json();
 
         if (data.afiliado) {
-          const nombreCompleto = data.datos.nombre_completo || '';
-          let nombre = '', apellido = '';
-          if (nombreCompleto.includes(',')) {
-            const partes = nombreCompleto.split(',');
-            apellido = partes[0].trim();
-            nombre = partes[1].trim();
-          } else {
-            nombre = nombreCompleto;
-          }
-
+          const nombreCompleto = data.datos.nombre_completo;
+          const partes = nombreCompleto.split(',');
+          const apellido = partes[0]?.trim() || '';
+          const nombre = partes[1]?.trim() || '';
           resultadoDiv.textContent = `✅ AFILIADO: ${nombre} ${apellido} (N° ${data.datos.nro_afiliado})`;
           resultadoDiv.className = 'afiliado';
           descargarBtn.style.display = 'block';
@@ -188,13 +122,11 @@
       form.method = 'POST';
       form.action = url;
       form.target = '_blank';
-
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'dni';
       input.value = dniAfiliado;
       form.appendChild(input);
-
       document.body.appendChild(form);
       form.submit();
       document.body.removeChild(form);
