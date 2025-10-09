@@ -5,91 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Panel de Administradores</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f0f0f0;
-    }
-    h1 {
-      color: #003366;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .panel, #pin-form {
-      display: none;
-    }
-    .visible {
-      display: block;
-    }
-    .panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-    .columna {
-      flex: 1;
-      min-width: 300px;
-    }
-    form {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 15px;
-      background-color: #003366;
-      color: white;
-      padding: 10px;
-      border: none;
-      width: 100%;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0055aa;
-    }
-    .mensaje {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    .exito { color: green; }
-    .error { color: red; }
-    .registro {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 20px;
-    }
-    .registro-entry {
-      margin-bottom: 10px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 5px;
-    }
-    @media (max-width: 768px) {
-      .panel { flex-direction: column; }
-    }
+    body { font-family: Arial, sans-serif; margin:0; padding:20px; background:#f0f0f0;}
+    h1 { color:#003366; text-align:center; margin-bottom:20px;}
+    .panel, #pin-form { display:none; }
+    .visible { display:block; }
+    .panel { display:flex; flex-wrap:wrap; gap:20px;}
+    .columna { flex:1; min-width:300px;}
+    form { background:white; padding:15px; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.1); margin-bottom:15px;}
+    label { display:block; margin-top:10px; font-weight:bold;}
+    input { width:100%; padding:8px; margin-top:5px; box-sizing:border-box;}
+    button { margin-top:15px; background-color:#003366; color:white; padding:10px; border:none; width:100%; border-radius:4px; cursor:pointer;}
+    button:hover { background-color:#0055aa;}
+    .mensaje { margin-top:10px; font-weight:bold;}
+    .exito { color:green;}
+    .error { color:red;}
+    .registro { background:white; padding:15px; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.1); max-height:400px; overflow-y:auto; margin-bottom:20px;}
+    .registro-entry { margin-bottom:10px; border-bottom:1px solid #ccc; padding-bottom:5px;}
+    @media(max-width:768px) {.panel{flex-direction:column;}}
   </style>
 </head>
 <body>
   <h1>PANEL DE ADMINISTRADORES</h1>
-
   <div id="pin-form" class="visible">
     <form onsubmit="return verificarPin()">
       <label>Ingrese PIN de administrador:</label>
@@ -100,37 +36,57 @@
   </div>
 
   <div class="panel" id="admin-panel">
-    <!-- Aquí van tus formularios de agregar, editar, eliminar y logs -->
+    <div class="columna">
+      <form id="form-agregar">
+        <h3>Agregar Afiliado</h3>
+        <label>N° Afiliado</label><input type="text" name="nro_afiliado" required>
+        <label>Nombre Completo</label><input type="text" name="nombre_completo" required>
+        <label>DNI</label><input type="text" name="dni" required>
+        <button type="submit">Agregar</button>
+        <div class="mensaje" id="mensaje-agregar"></div>
+      </form>
+
+      <form id="form-eliminar">
+        <h3>Eliminar Afiliado</h3>
+        <label>DNI</label><input type="text" name="dni" required>
+        <button type="submit">Eliminar</button>
+        <div class="mensaje" id="mensaje-eliminar"></div>
+      </form>
+    </div>
+
+    <div class="columna">
+      <h3>Logs de Actividad</h3>
+      <div class="registro" id="registro-logs"></div>
+    </div>
   </div>
 
   <script>
-    const PIN = '1906';
-    const API_URL = 'https://afiliados-verificacion-production.up.railway.app';
+    const api = 'https://afiliados-verificacion-production.up.railway.app';
+    const ADMIN_PIN = '1906'; // Puedes mantenerlo aquí
+    let pinValidado = false;
 
     function verificarPin() {
       const input = document.getElementById('pin-input').value.trim();
       const mensaje = document.getElementById('pin-mensaje');
-      if (input === PIN) {
-        sessionStorage.setItem('pin-validado', 'true');
+      if(input === ADMIN_PIN) {
+        pinValidado = true;
+        sessionStorage.setItem('pin-validado','true');
         document.getElementById('pin-form').classList.remove('visible');
         document.getElementById('admin-panel').classList.add('visible');
         iniciarSesion();
       } else {
-        mensaje.textContent = 'PIN incorrecto';
-        mensaje.className = 'mensaje error';
+        mensaje.textContent='PIN incorrecto';
+        mensaje.className='mensaje error';
       }
       return false;
     }
 
     function iniciarSesion() {
       cargarLogs();
-      let inactividadTimer = setTimeout(cerrarSesion, 5 * 60 * 1000);
-      ['mousemove','keydown','click','scroll'].forEach(evt => {
-        document.addEventListener(evt, () => {
-          clearTimeout(inactividadTimer);
-          inactividadTimer = setTimeout(cerrarSesion, 5 * 60 * 1000);
-        });
-      });
+      let inactividadTimer = setTimeout(cerrarSesion, 5*60*1000);
+      document.addEventListener('mousemove', resetTimer);
+      document.addEventListener('keydown', resetTimer);
+      function resetTimer() { clearTimeout(inactividadTimer); inactividadTimer = setTimeout(cerrarSesion, 5*60*1000); }
     }
 
     function cerrarSesion() {
@@ -138,32 +94,75 @@
       location.reload();
     }
 
-    async function cargarLogs() {
-      try {
-        const res = await fetch(`${API_URL}/admin/listar-logs`, {
-          headers: { 'x-admin-pin': PIN }
-        });
-        const logs = await res.json();
-        const cont = document.createElement('div');
-        cont.className = 'registro';
-        logs.forEach(log => {
-          const div = document.createElement('div');
-          div.className = 'registro-entry';
-          div.textContent = `${log.fecha} | ${log.accion} | ${log.nombre_completo} | DNI: ${log.dni} | N° Afiliado: ${log.nro_afiliado}`;
-          cont.appendChild(div);
-        });
-        document.getElementById('admin-panel').appendChild(cont);
-      } catch (err) {
-        console.error('Error cargando logs:', err);
-      }
-    }
-
-    // Auto-login si ya se validó el PIN
-    if (sessionStorage.getItem('pin-validado') === 'true') {
+    if(sessionStorage.getItem('pin-validado')==='true') {
+      pinValidado=true;
       document.getElementById('pin-form').classList.remove('visible');
       document.getElementById('admin-panel').classList.add('visible');
       iniciarSesion();
     }
+
+    // --- AGREGAR ---
+    const formAgregar = document.getElementById('form-agregar');
+    formAgregar.addEventListener('submit', async e => {
+      e.preventDefault();
+      if(!pinValidado) return alert('PIN inválido');
+      const formData = new FormData(formAgregar);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await fetch(`${api}/admin/cargar-afiliados`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json','x-admin-pin':ADMIN_PIN },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        const msg = document.getElementById('mensaje-agregar');
+        msg.textContent = json.message || json.error;
+        msg.className = 'mensaje ' + (json.success?'exito':'error');
+        if(json.success) formAgregar.reset();
+        cargarLogs();
+      } catch(err) { console.error(err); }
+    });
+
+    // --- ELIMINAR ---
+    const formEliminar = document.getElementById('form-eliminar');
+    formEliminar.addEventListener('submit', async e => {
+      e.preventDefault();
+      if(!pinValidado) return alert('PIN inválido');
+      const dni = formEliminar.dni.value.trim();
+      try {
+        const res = await fetch(`${api}/admin/eliminar-afiliado`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json','x-admin-pin':ADMIN_PIN },
+          body: JSON.stringify({ dni })
+        });
+        const json = await res.json();
+        const msg = document.getElementById('mensaje-eliminar');
+        msg.textContent = json.message || json.error;
+        msg.className = 'mensaje ' + (json.success?'exito':'error');
+        cargarLogs();
+      } catch(err){ console.error(err); }
+    });
+
+    // --- CARGAR LOGS ---
+    async function cargarLogs() {
+      if(!pinValidado) return;
+      try {
+        const res = await fetch(`${api}/admin/listar-logs`, {
+          headers:{ 'x-admin-pin':ADMIN_PIN }
+        });
+        const logs = await res.json();
+        const cont = document.getElementById('registro-logs');
+        cont.innerHTML='';
+        logs.forEach(l => {
+          const div = document.createElement('div');
+          div.className='registro-entry';
+          div.textContent = `[${new Date(l.fecha).toLocaleString()}] ${l.accion} - ${l.nombre_completo} (${l.dni}) N° ${l.nro_afiliado}`;
+          cont.appendChild(div);
+        });
+      } catch(err){ console.error('Error cargar logs:',err); }
+    }
   </script>
 </body>
 </html>
+
