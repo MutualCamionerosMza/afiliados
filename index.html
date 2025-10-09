@@ -9,7 +9,6 @@
       margin: 0;
       padding: 0;
       height: 100vh;
-      overflow: hidden;
       font-family: Arial, sans-serif;
       background-color: #e6e6e6;
       display: flex;
@@ -82,13 +81,9 @@
       text-align: center;
     }
 
-    #resultado.afiliado {
-      color: green;
-    }
-
-    #resultado.no-afiliado {
-      color: red;
-    }
+    #resultado.afiliado { color: green; }
+    #resultado.no-afiliado { color: red; }
+    #resultado.error { color: orange; }
 
     .logo-bottom {
       width: 100%;
@@ -107,25 +102,10 @@
     }
 
     @media (max-width: 850px) {
-      .contenedor {
-        width: 95%;
-        height: auto;
-        max-height: none;
-        padding: 20px;
-      }
-
-      h1 {
-        font-size: 28px;
-      }
-
-      label, input, button, #resultado {
-        font-size: 16px;
-      }
-
-      .logo-bottom img {
-        max-height: 220px;
-        margin-top: 10px;
-      }
+      .contenedor { width: 95%; height: auto; max-height: none; padding: 20px; }
+      h1 { font-size: 28px; }
+      label, input, button, #resultado { font-size: 16px; }
+      .logo-bottom img { max-height: 220px; margin-top: 10px; }
     }
   </style>
 </head>
@@ -154,7 +134,7 @@
     const descargarBtn = document.getElementById('descargar');
     let dniAfiliado = '';
 
-    const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
+    const urlBase = 'https://verificacion-afiliados-production.up.railway.app';
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -174,10 +154,16 @@
         const data = await response.json();
 
         if (data.afiliado) {
-          const nombreCompleto = data.datos.nombre_completo;
-          const partes = nombreCompleto.split(',');
-          const apellido = partes[0]?.trim() || '';
-          const nombre = partes[1]?.trim() || '';
+          const nombreCompleto = data.datos.nombre_completo || '';
+          let nombre = '', apellido = '';
+          if (nombreCompleto.includes(',')) {
+            const partes = nombreCompleto.split(',');
+            apellido = partes[0].trim();
+            nombre = partes[1].trim();
+          } else {
+            nombre = nombreCompleto;
+          }
+
           resultadoDiv.textContent = `✅ AFILIADO: ${nombre} ${apellido} (N° ${data.datos.nro_afiliado})`;
           resultadoDiv.className = 'afiliado';
           descargarBtn.style.display = 'block';
@@ -216,3 +202,4 @@
   </script>
 </body>
 </html>
+
