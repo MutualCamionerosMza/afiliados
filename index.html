@@ -5,15 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Verificación de Afiliados</title>
   <style>
-    html, body {
-      margin: 0; padding: 0; height: 100vh; font-family: Arial, sans-serif;
-      background-color: #e6e6e6; display: flex; justify-content: center; align-items: center;
-    }
-    .contenedor {
-      background: white; width: 800px; max-height: 90vh; border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); padding: 30px 40px 40px 40px;
-      display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
-    }
+    html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; font-family: Arial, sans-serif; background-color: #e6e6e6; display: flex; justify-content: center; align-items: center; }
+    .contenedor { background: white; width: 800px; max-height: 90vh; border-radius: 12px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); padding: 30px 40px 40px 40px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
     h1 { color: #003366; font-size: 32px; text-align: center; margin-bottom: 10px; }
     form { flex-grow: 1; }
     label { font-size: 20px; font-weight: bold; display: block; margin-top: 10px; }
@@ -55,8 +48,6 @@
     const resultadoDiv = document.getElementById('resultado');
     const descargarBtn = document.getElementById('descargar');
     let dniAfiliado = '';
-
-    // URL de tu backend en Railway
     const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
 
     form.addEventListener('submit', async (e) => {
@@ -65,12 +56,6 @@
       dniAfiliado = dni;
       resultadoDiv.textContent = '';
       resultadoDiv.className = '';
-
-      if (!dni || !/^\d+$/.test(dni)) {
-        resultadoDiv.textContent = 'DNI inválido';
-        resultadoDiv.className = 'no-afiliado';
-        return;
-      }
 
       try {
         const response = await fetch(`${urlBase}/verificar`, {
@@ -96,7 +81,6 @@
           descargarBtn.style.display = 'none';
           form.reset();
         }
-
       } catch (error) {
         resultadoDiv.textContent = '⚠️ Error al conectar con el servidor.';
         resultadoDiv.className = 'error';
@@ -106,17 +90,15 @@
 
     descargarBtn.addEventListener('click', () => {
       if (!dniAfiliado) return;
-
+      const url = `${urlBase}/credencial`;
       const form = document.createElement('form');
       form.method = 'POST';
-      form.action = `${urlBase}/credencial`;
+      form.action = url;
       form.target = '_blank';
-
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'dni';
       input.value = dniAfiliado;
-
       form.appendChild(input);
       document.body.appendChild(form);
       form.submit();
@@ -125,4 +107,3 @@
   </script>
 </body>
 </html>
-
