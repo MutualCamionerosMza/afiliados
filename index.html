@@ -2,54 +2,200 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Verificación de Afiliados</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #e6e6e6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .contenedor {
+      background: white;
+      width: 800px;
+      max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      padding: 30px 40px 40px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    h1 {
+      color: #003366;
+      font-size: 32px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    form {
+      flex-grow: 1;
+    }
+    label {
+      font-size: 20px;
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 14px;
+      background-color: #003366;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 18px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #0055aa;
+    }
+    #resultado {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 18px;
+      text-align: center;
+    }
+    #resultado.afiliado {
+      color: green;
+    }
+    #resultado.no-afiliado {
+      color: red;
+    }
+    .logo-bottom {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 15px;
+    }
+    .logo-bottom img {
+      max-height: 340px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      margin-top: 15px;
+    }
+    @media (max-width: 850px) {
+      .contenedor {
+        width: 95%;
+        height: auto;
+        max-height: none;
+        padding: 20px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      label, input, button, #resultado {
+        font-size: 16px;
+      }
+      .logo-bottom img {
+        max-height: 220px;
+        margin-top: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Verificación de Afiliados</h1>
-    <form id="verificarForm">
-      <label for="dni">DNI:</label>
-      <input type="text" id="dni" name="dni" required />
-
-      <label for="nombre_completo">Nombre y Apellido:</label>
-      <input type="text" id="nombre_completo" name="nombre_completo" required />
-
-      <button type="submit">Verificar</button>
-    </form>
-
-    <div id="resultado"></div>
+  <div class="contenedor">
+    <div>
+      <h1>Verificación de Afiliados</h1>
+      <form id="formulario">
+        <label for="dni">DNI</label>
+        <input type="text" id="dni" name="dni" required />
+        <button type="submit">Verificar</button>
+      </form>
+      <div id="resultado"></div>
+      <button id="descargar" style="display: none;">Ver Credencial</button>
+    </div>
+    <div class="logo-bottom">
+      <img src="https://i.imgur.com/ZXJvT6b.png" alt="Logo de la empresa" />
+    </div>
   </div>
 
   <script>
-    const API_URL = "https://afiliados-verificacion-production.up.railway.app";
+    const form = document.getElementById('formulario');
+    const resultadoDiv = document.getElementById('resultado');
+    const descargarBtn = document.getElementById('descargar');
+    let dniAfiliado = '';
 
-    document.getElementById("verificarForm").addEventListener("submit", async (e) => {
+    const urlBase = 'https://afiliados-verificacion-production.up.railway.app';
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const dni = document.getElementById("dni").value.trim();
-      const nombre = document.getElementById("nombre_completo").value.trim();
-      const resultado = document.getElementById("resultado");
+      const dni = document.getElementById('dni').value.trim();
+      dniAfiliado = dni;
 
-      resultado.textContent = "Verificando...";
+      resultadoDiv.textContent = '';
+      resultadoDiv.className = '';
+      descargarBtn.style.display = 'none';
 
       try {
-        const res = await fetch(`${API_URL}/verificar?dni=${dni}&nombre_completo=${encodeURIComponent(nombre)}`);
-        if (!res.ok) throw new Error("Error en la verificación");
+        const response = await fetch(`${urlBase}/verificar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dni })
+        });
 
-        const data = await res.json();
-        if (data && data.afiliado) {
-          resultado.innerHTML = `
-            ✅ <strong>${data.afiliado.nombre_completo}</strong><br>
-            Número de afiliado: ${data.afiliado.nro_afiliado}<br>
-            <a href="${API_URL}/credencial?dni=${dni}&nombre_completo=${encodeURIComponent(nombre)}" target="_blank">Descargar Credencial</a>
-          `;
+        if (!response.ok) throw new Error('Respuesta no válida del servidor');
+
+        const data = await response.json();
+
+        if (data.afiliado) {
+          const nombreCompleto = data.datos.nombre_completo;
+          const partes = nombreCompleto.split(',');
+          const apellido = partes[0]?.trim() || '';
+          const nombre = partes[1]?.trim() || '';
+
+          resultadoDiv.textContent = `✅ AFILIADO: ${nombre} ${apellido} (N° ${data.datos.nro_afiliado})`;
+          resultadoDiv.className = 'afiliado';
+          descargarBtn.style.display = 'block';
+          form.reset();
         } else {
-          resultado.textContent = "❌ Afiliado no encontrado.";
+          resultadoDiv.textContent = '❌ No se encontró afiliado con ese DNI.';
+          resultadoDiv.className = 'no-afiliado';
         }
       } catch (error) {
-        resultado.textContent = "Error de conexión con el servidor.";
+        console.error('Error al conectar:', error);
+        resultadoDiv.textContent = '⚠️ Error al conectar con el servidor.';
+        resultadoDiv.className = 'no-afiliado';
       }
+    });
+
+    descargarBtn.addEventListener('click', () => {
+      if (!dniAfiliado) return;
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${urlBase}/credencial`;
+      form.target = '_blank';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'dni';
+      input.value = dniAfiliado;
+
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
     });
   </script>
 </body>
