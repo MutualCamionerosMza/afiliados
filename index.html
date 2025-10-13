@@ -48,8 +48,6 @@
     const resultadoDiv = document.getElementById('resultado');
     const descargarBtn = document.getElementById('descargar');
     let dniAfiliado = '';
-    
-    // URL de tu backend en Railway
     const urlBase = 'https://verificacion-afiliados-production.up.railway.app';
 
     form.addEventListener('submit', async (e) => {
@@ -62,15 +60,9 @@
       try {
         const response = await fetch(`${urlBase}/verificar`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dni })
         });
-
-        if (!response.ok) {
-          throw new Error('Error en la respuesta del servidor');
-        }
 
         const data = await response.json();
 
@@ -90,27 +82,37 @@
           form.reset();
         }
       } catch (error) {
-        resultadoDiv.textContent = '⚠️ Error al conectar con el servidor. Revisa CORS y que el backend esté activo.';
+        resultadoDiv.textContent = '⚠️ Error al conectar con el servidor.';
         resultadoDiv.className = 'error';
         console.error(error);
       }
     });
 
-    descargarBtn.addEventListener('click', () => {
+    descargarBtn.addEventListener('click', async () => {
       if (!dniAfiliado) return;
-      const url = `${urlBase}/credencial`;
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = url;
-      form.target = '_blank';
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'dni';
-      input.value = dniAfiliado;
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
+
+      try {
+        const response = await fetch(`${urlBase}/credencial`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dni: dniAfiliado })
+        });
+
+        if (!response.ok) throw new Error('Error al generar la credencial');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `credencial-${dniAfiliado}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        alert('No se pudo descargar la credencial. Intenta nuevamente.');
+        console.error(error);
+      }
     });
   </script>
 </body>
