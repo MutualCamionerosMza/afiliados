@@ -88,31 +88,10 @@
       }
     });
 
-    descargarBtn.addEventListener('click', async () => {
+    // NUEVO: Abrir credencial en nueva pestaña (GET)
+    descargarBtn.addEventListener('click', () => {
       if (!dniAfiliado) return;
-
-      try {
-        const response = await fetch(`${urlBase}/credencial`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dni: dniAfiliado })
-        });
-
-        if (!response.ok) throw new Error('Error al generar la credencial');
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `credencial-${dniAfiliado}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        alert('No se pudo descargar la credencial. Intenta nuevamente.');
-        console.error(error);
-      }
+      window.open(`${urlBase}/credencial?dni=${dniAfiliado}`, '_blank');
     });
   </script>
 </body>
