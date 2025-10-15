@@ -104,7 +104,7 @@
 
   /* ---------- MÓVIL DINÁMICO ---------- */
   @media(max-width: 768px) {
-    h1 { margin: 20px 0 10px 0; font-size: 2.5em; }
+    h1 { margin: 20px 0 10px 0; font-size: 2.2em; }
 
     .carousel-container { padding: 0; overflow: hidden; }
     .carousel {
@@ -117,6 +117,7 @@
 
     .carousel img {
       width: 70%;
+      max-width: 220px; /* más pequeña */
       height: auto;
       border-radius: 15px;
       margin: 0 10px;
@@ -130,7 +131,7 @@
     /* Puntitos indicadores */
     .dots {
       text-align: center;
-      margin: 20px 0 30px 0; /* un poquito más abajo */
+      margin: 15px 0 25px 0; /* más abajo */
     }
     .dot {
       display: inline-block;
@@ -191,11 +192,11 @@ function updateCarouselMobile() {
   const imgs = carousel.querySelectorAll('img');
   imgs.forEach((img,i)=>{
     if(i === currentIndex){
-      img.style.transform = "scale(0.85) translateY(0)";
+      img.style.transform = "scale(1) translateY(0)";
       img.style.opacity = "1";
     } else {
-      img.style.transform = "scale(0.7) translateY(10px)";
-      img.style.opacity = "0.6";
+      img.style.transform = "scale(0.8) translateY(10px)";
+      img.style.opacity = "0.5";
     }
   });
   updateDots();
