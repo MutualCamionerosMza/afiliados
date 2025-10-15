@@ -13,7 +13,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     min-height: 100vh;
   }
 
@@ -56,19 +55,8 @@
     transform-origin: center center;
   }
 
-  /* Todas las imágenes grandes desde el inicio */
-  .carousel img {
-    transform: scale(1.5);
-    box-shadow: none;
-    z-index: 5;
-  }
-
-  /* Hover ligero */
-  .carousel img.hovered {
-    transform: scale(1.7);
-    z-index: 20;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  }
+  .carousel img { transform: scale(1.5); z-index: 5; }
+  .carousel img.hovered { transform: scale(1.7); z-index: 20; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
 
   .arrow {
     position: absolute;
@@ -82,7 +70,7 @@
     z-index: 50;
     padding: 5px;
     border-radius: 50%;
-    opacity: 0; /* invisibles por defecto */
+    opacity: 0;
   }
 
   .carousel-container:hover .arrow { opacity: 1; }
@@ -90,15 +78,9 @@
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
-  @media(max-width: 900px) {
-    .carousel img { width: 200px; height: 200px; transform: scale(1.4); }
-  }
-  @media(max-width: 600px) {
-    .carousel img { width: 160px; height: 160px; transform: scale(1.3); }
-  }
-  @media(max-width: 400px) {
-    .carousel img { width: 140px; height: 140px; transform: scale(1.2); }
-  }
+  @media(max-width: 900px) { .carousel img { width: 200px; height: 200px; transform: scale(1.4); } }
+  @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
+  @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
 
   /* ============================ */
   /* MODO MÓVIL */
@@ -115,15 +97,16 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
     padding-bottom: 10px;
   }
 
   .mobile-gallery::-webkit-scrollbar { display: none; }
 
   .mobile-gallery .card {
-    flex: 0 0 80%; /* tarjeta más chica para dejar espacio arriba y abajo */
-    scroll-snap-align: start;
-    margin: 0 10%;
+    flex: 0 0 75%; /* tarjeta más chica para que entre todo */
+    scroll-snap-align: center;
+    margin: 0 12.5%; /* centrado */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -253,7 +236,7 @@ function initIndicators() {
 
   mobileGallery.addEventListener("scroll", () => {
     const scrollLeft = mobileGallery.scrollLeft;
-    const cardWidth = mobileGallery.querySelector(".card").offsetWidth;
+    const cardWidth = mobileGallery.querySelector(".card").offsetWidth + 20; // incluir margen
     const index = Math.round(scrollLeft / cardWidth);
     const dots = indicators.querySelectorAll(".dot");
     dots.forEach(d => d.classList.remove("active"));
