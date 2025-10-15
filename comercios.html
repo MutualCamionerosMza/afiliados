@@ -13,13 +13,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     min-height: 100vh;
   }
 
   h1 {
     margin: 40px 0 20px 0;
-    font-size: 3em;
+    font-size: 2.5em;
     color: #004080;
     text-align: center;
   }
@@ -28,18 +27,15 @@
     width: 100%;
     max-width: 1300px;
     overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 100px 0;
     position: relative;
-    perspective: 1200px;
+    padding: 60px 0;
   }
 
   .carousel {
     display: flex;
-    gap: 50px;
-    transition: transform 0.2s linear;
+    gap: 30px;
+    transition: transform 0.3s ease;
+    will-change: transform;
   }
 
   .carousel img {
@@ -48,23 +44,16 @@
     object-fit: contain;
     border-radius: 15px;
     flex-shrink: 0;
+    cursor: grab;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-    transform-origin: center center;
   }
 
-  /* Todas las imágenes grandes desde el inicio */
-  .carousel img {
-    transform: scale(1.5);
-    box-shadow: none;
-    z-index: 5;
-  }
-
-  /* Hover ligero */
-  .carousel img.hovered {
-    transform: scale(1.7);
-    z-index: 20;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  /* Hover desktop */
+  @media(min-width: 600px) {
+    .carousel img:hover {
+      transform: scale(1.2);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
   }
 
   .arrow {
@@ -79,11 +68,11 @@
     z-index: 50;
     padding: 5px;
     border-radius: 50%;
-    opacity: 0; /* invisibles por defecto */
+    opacity: 0;
   }
 
   .carousel-container:hover .arrow {
-    opacity: 1; /* aparecen al acercar el cursor */
+    opacity: 1;
   }
 
   .arrow:hover {
@@ -93,16 +82,13 @@
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
+  /* Responsive */
   @media(max-width: 900px) {
-    .carousel img { width: 200px; height: 200px; transform: scale(1.4); }
+    .carousel img { width: 180px; height: 180px; }
   }
-
   @media(max-width: 600px) {
-    .carousel img { width: 160px; height: 160px; transform: scale(1.3); }
-  }
-
-  @media(max-width: 400px) {
-    .carousel img { width: 140px; height: 140px; transform: scale(1.2); }
+    .carousel img { width: 140px; height: 140px; }
+    .arrow { display: none; } /* esconder flechas en móvil */
   }
 </style>
 </head>
@@ -110,7 +96,7 @@
 
 <h1>Comercios Adheridos</h1>
 
-<div class="carousel-container">
+<div class="carousel-container" id="carousel-container">
   <div class="carousel" id="carousel"></div>
   <div class="arrow left" id="arrow-left">&#9664;</div>
   <div class="arrow right" id="arrow-right">&#9654;</div>
@@ -120,61 +106,72 @@
 const carousel = document.getElementById("carousel");
 const arrowLeft = document.getElementById("arrow-left");
 const arrowRight = document.getElementById("arrow-right");
+const container = document.getElementById("carousel-container");
+
 let comercios = [];
-let scrollAmount = 0;
-let isPaused = false;
+let scrollX = 0;
+let isDragging = false;
+let startX = 0;
+let scrollStart = 0;
 let speed = 1.5;
 
-// Cargar imágenes desde JSON
+// Cargar imágenes
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
     comercios = data;
     initCarousel();
-    requestAnimationFrame(autoScroll);
+    if(window.innerWidth > 600) requestAnimationFrame(autoScroll);
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
 function initCarousel() {
-  const allImages = [...comercios, ...comercios, ...comercios]; // loop suave
-
-  allImages.forEach((imgSrc) => {
+  comercios.forEach((imgSrc) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-
-    // Hover ligero
-    img.addEventListener("mouseenter", () => {
-      img.classList.add("hovered");
-      isPaused = true; // pausa scroll
-    });
-    img.addEventListener("mouseleave", () => {
-      img.classList.remove("hovered");
-      isPaused = false; // continua scroll
-    });
-
     carousel.appendChild(img);
   });
 }
 
-// Auto scroll continuo
+// Auto scroll desktop
 function autoScroll() {
-  if(!isPaused) {
-    scrollAmount += speed;
-    if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
-    if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
+  if(!isDragging) {
+    scrollX += speed;
+    if(scrollX >= carousel.scrollWidth - container.offsetWidth) scrollX = 0;
+    carousel.style.transform = `translateX(${-scrollX}px)`;
   }
-  carousel.style.transform = `translateX(${-scrollAmount}px)`;
   requestAnimationFrame(autoScroll);
 }
 
-// Flechas para acelerar scroll
+// Flechas desktop
 arrowRight.addEventListener("mouseenter", () => { speed = 6; });
 arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
 
 arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
 arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
 
+// Swipe móvil
+carousel.addEventListener("pointerdown", (e) => {
+  isDragging = true;
+  startX = e.clientX;
+  scrollStart = scrollX;
+  carousel.style.cursor = 'grabbing';
+});
+
+window.addEventListener("pointerup", () => {
+  isDragging = false;
+  carousel.style.cursor = 'grab';
+});
+
+window.addEventListener("pointermove", (e) => {
+  if(!isDragging) return;
+  const dx = e.clientX - startX;
+  scrollX = scrollStart - dx;
+  if(scrollX < 0) scrollX = 0;
+  if(scrollX > carousel.scrollWidth - container.offsetWidth) scrollX = carousel.scrollWidth - container.offsetWidth;
+  carousel.style.transform = `translateX(${-scrollX}px)`;
+});
 </script>
 
 </body>
