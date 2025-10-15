@@ -10,10 +10,6 @@
     font-family: 'Arial', sans-serif;
     background: #f9f9f9;
     color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
   }
 
   h1 {
@@ -23,40 +19,48 @@
     text-align: center;
   }
 
-  .carousel-container {
+  /* ================= DESKTOP ================= */
+  .desktop-carousel {
+    display: none; /* por defecto oculto en móvil */
     width: 100%;
     max-width: 1300px;
+    margin: auto;
     overflow: hidden;
-    position: relative;
-    padding: 60px 0;
-  }
-
-  .carousel {
     display: flex;
-    gap: 30px;
-    transition: transform 0.3s ease;
-    will-change: transform;
+    justify-content: center;
+    align-items: center;
+    padding: 100px 0;
+    position: relative;
+    perspective: 1200px;
   }
 
-  .carousel img {
+  .desktop-carousel .carousel {
+    display: flex;
+    gap: 50px;
+    transition: transform 0.2s linear;
+  }
+
+  .desktop-carousel .carousel img {
     width: 250px;
     height: 250px;
     object-fit: contain;
     border-radius: 15px;
     flex-shrink: 0;
-    cursor: grab;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    transform-origin: center center;
+    transform: scale(1.5);
+    box-shadow: none;
+    z-index: 5;
   }
 
-  /* Hover desktop */
-  @media(min-width: 600px) {
-    .carousel img:hover {
-      transform: scale(1.2);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
+  .desktop-carousel .carousel img.hovered {
+    transform: scale(1.7);
+    z-index: 20;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
   }
 
-  .arrow {
+  .desktop-carousel .arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -71,24 +75,64 @@
     opacity: 0;
   }
 
-  .carousel-container:hover .arrow {
+  .desktop-carousel:hover .arrow {
     opacity: 1;
   }
 
-  .arrow:hover {
+  .desktop-carousel .arrow:hover {
     color: rgba(0,64,128,1);
   }
 
-  .arrow.left { left: 10px; }
-  .arrow.right { right: 10px; }
+  .desktop-carousel .arrow.left { left: 10px; }
+  .desktop-carousel .arrow.right { right: 10px; }
 
-  /* Responsive */
-  @media(max-width: 900px) {
-    .carousel img { width: 180px; height: 180px; }
+  /* ================= MOBILE ================= */
+  .mobile-carousel {
+    display: none; /* se activa solo en móvil */
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding: 20px;
+    scroll-snap-type: x mandatory;
   }
-  @media(max-width: 600px) {
-    .carousel img { width: 140px; height: 140px; }
-    .arrow { display: none; } /* esconder flechas en móvil */
+
+  .mobile-carousel::-webkit-scrollbar {
+    display: none; /* oculta scrollbar */
+  }
+
+  .mobile-carousel .card {
+    flex: 0 0 auto;
+    width: 140px;
+    scroll-snap-align: start;
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+
+  .mobile-carousel .card img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-bottom: 8px;
+  }
+
+  .mobile-carousel .card h3 {
+    font-size: 0.9em;
+    margin: 0;
+    color: #004080;
+  }
+
+  /* ================= RESPONSIVE ================= */
+  @media(max-width: 900px) {
+    .desktop-carousel { display: none; }
+    .mobile-carousel { display: flex; }
+  }
+
+  @media(min-width: 901px) {
+    .desktop-carousel { display: flex; }
+    .mobile-carousel { display: none; }
   }
 </style>
 </head>
@@ -96,82 +140,90 @@
 
 <h1>Comercios Adheridos</h1>
 
-<div class="carousel-container" id="carousel-container">
-  <div class="carousel" id="carousel"></div>
+<!-- Desktop -->
+<div class="desktop-carousel">
+  <div class="carousel" id="desktop-carousel"></div>
   <div class="arrow left" id="arrow-left">&#9664;</div>
   <div class="arrow right" id="arrow-right">&#9654;</div>
 </div>
 
+<!-- Mobile -->
+<div class="mobile-carousel" id="mobile-carousel"></div>
+
 <script>
-const carousel = document.getElementById("carousel");
+const desktopCarousel = document.getElementById("desktop-carousel");
 const arrowLeft = document.getElementById("arrow-left");
 const arrowRight = document.getElementById("arrow-right");
-const container = document.getElementById("carousel-container");
+const mobileCarousel = document.getElementById("mobile-carousel");
 
 let comercios = [];
-let scrollX = 0;
-let isDragging = false;
-let startX = 0;
-let scrollStart = 0;
+let scrollAmount = 0;
+let isPaused = false;
 let speed = 1.5;
 
-// Cargar imágenes
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
     comercios = data;
-    initCarousel();
-    if(window.innerWidth > 600) requestAnimationFrame(autoScroll);
+    initDesktopCarousel();
+    initMobileCarousel();
+    requestAnimationFrame(autoScroll);
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
-function initCarousel() {
-  comercios.forEach((imgSrc) => {
+/* ========== Desktop ========== */
+function initDesktopCarousel() {
+  const allImages = [...comercios, ...comercios, ...comercios]; // loop suave
+  allImages.forEach((imgSrc) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    carousel.appendChild(img);
+
+    img.addEventListener("mouseenter", () => {
+      img.classList.add("hovered");
+      isPaused = true;
+    });
+    img.addEventListener("mouseleave", () => {
+      img.classList.remove("hovered");
+      isPaused = false;
+    });
+
+    desktopCarousel.appendChild(img);
   });
 }
 
-// Auto scroll desktop
 function autoScroll() {
-  if(!isDragging) {
-    scrollX += speed;
-    if(scrollX >= carousel.scrollWidth - container.offsetWidth) scrollX = 0;
-    carousel.style.transform = `translateX(${-scrollX}px)`;
+  if(!isPaused) {
+    scrollAmount += speed;
+    if(scrollAmount >= desktopCarousel.scrollWidth / 3) scrollAmount = 0;
+    if(scrollAmount < 0) scrollAmount = desktopCarousel.scrollWidth / 3;
   }
+  desktopCarousel.style.transform = `translateX(${-scrollAmount}px)`;
   requestAnimationFrame(autoScroll);
 }
 
-// Flechas desktop
 arrowRight.addEventListener("mouseenter", () => { speed = 6; });
 arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
-
 arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
 arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
 
-// Swipe móvil
-carousel.addEventListener("pointerdown", (e) => {
-  isDragging = true;
-  startX = e.clientX;
-  scrollStart = scrollX;
-  carousel.style.cursor = 'grabbing';
-});
+/* ========== Mobile ========== */
+function initMobileCarousel() {
+  comercios.forEach(c => {
+    const card = document.createElement("div");
+    card.className = "card";
 
-window.addEventListener("pointerup", () => {
-  isDragging = false;
-  carousel.style.cursor = 'grab';
-});
+    const img = document.createElement("img");
+    img.src = `comercios/${c}`;
+    card.appendChild(img);
 
-window.addEventListener("pointermove", (e) => {
-  if(!isDragging) return;
-  const dx = e.clientX - startX;
-  scrollX = scrollStart - dx;
-  if(scrollX < 0) scrollX = 0;
-  if(scrollX > carousel.scrollWidth - container.offsetWidth) scrollX = carousel.scrollWidth - container.offsetWidth;
-  carousel.style.transform = `translateX(${-scrollX}px)`;
-});
+    const name = document.createElement("h3");
+    name.textContent = c.replace('.jpg',''); 
+    card.appendChild(name);
+
+    mobileCarousel.appendChild(card);
+  });
+}
 </script>
 
 </body>
