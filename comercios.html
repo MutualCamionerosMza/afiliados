@@ -24,7 +24,9 @@
     text-align: center;
   }
 
+  /* ====================== */
   /* Modo escritorio (igual que antes) */
+  /* ====================== */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -54,14 +56,6 @@
     transform-origin: center center;
   }
 
-  /* Todas las imágenes grandes desde el inicio */
-  .carousel img {
-    transform: scale(1.5);
-    box-shadow: none;
-    z-index: 5;
-  }
-
-  /* Hover ligero */
   .carousel img.hovered {
     transform: scale(1.7);
     z-index: 20;
@@ -80,17 +74,11 @@
     z-index: 50;
     padding: 5px;
     border-radius: 50%;
-    opacity: 0; /* invisibles por defecto */
+    opacity: 0;
   }
 
-  .carousel-container:hover .arrow {
-    opacity: 1; /* aparecen al acercar el cursor */
-  }
-
-  .arrow:hover {
-    color: rgba(0,64,128,1);
-  }
-
+  .carousel-container:hover .arrow { opacity: 1; }
+  .arrow:hover { color: rgba(0,64,128,1); }
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
@@ -108,21 +96,24 @@
     }
 
     .carousel {
-      gap: 20px;
+      gap: 15px;
+      transition: transform 0.5s ease; /* transición suave */
     }
 
     .carousel img {
-      width: 70%; /* ocupa el 70% de la pantalla */
+      width: 70%;
       height: auto;
       border-radius: 15px;
       transform: scale(1);
+      flex-shrink: 0;
+      transition: transform 0.5s ease;
     }
 
     .indicators {
       display: flex;
       gap: 8px;
       justify-content: center;
-      margin-top: 15px; /* un poco más abajo de la tarjeta */
+      margin-top: 20px;
       margin-bottom: 20px;
     }
 
@@ -131,6 +122,7 @@
       height: 10px;
       border-radius: 50%;
       background-color: #ccc;
+      transition: background-color 0.3s;
     }
 
     .indicator.active {
@@ -181,7 +173,7 @@ function initCarousel() {
     indicatorsContainer.appendChild(dot);
   });
 
-  // Desplazamiento con swipe
+  // Swipe
   let startX = 0;
   let isDragging = false;
 
@@ -220,8 +212,9 @@ function prev() {
 }
 
 function scrollToIndex() {
-  const width = carousel.children[currentIndex].offsetWidth + 20; // gap=20
-  carousel.style.transform = `translateX(${-currentIndex * width}px)`;
+  const width = carousel.children[currentIndex].offsetWidth + 15; // gap
+  const offset = -currentIndex * width + (window.innerWidth - carousel.children[currentIndex].offsetWidth)/2; // centrar
+  carousel.style.transform = `translateX(${offset}px)`;
   updateIndicators();
 }
 </script>
