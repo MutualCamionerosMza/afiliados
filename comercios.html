@@ -13,6 +13,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     min-height: 100vh;
   }
 
@@ -23,9 +24,7 @@
     text-align: center;
   }
 
-  /* ============================ */
-  /* MODO ESCRITORIO */
-  /* ============================ */
+  /* Modo escritorio (igual que antes) */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -55,8 +54,19 @@
     transform-origin: center center;
   }
 
-  .carousel img { transform: scale(1.5); z-index: 5; }
-  .carousel img.hovered { transform: scale(1.7); z-index: 20; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+  /* Todas las imágenes grandes desde el inicio */
+  .carousel img {
+    transform: scale(1.5);
+    box-shadow: none;
+    z-index: 5;
+  }
+
+  /* Hover ligero */
+  .carousel img.hovered {
+    transform: scale(1.7);
+    z-index: 20;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
 
   .arrow {
     position: absolute;
@@ -70,76 +80,62 @@
     z-index: 50;
     padding: 5px;
     border-radius: 50%;
-    opacity: 0;
+    opacity: 0; /* invisibles por defecto */
   }
 
-  .carousel-container:hover .arrow { opacity: 1; }
-  .arrow:hover { color: rgba(0,64,128,1); }
+  .carousel-container:hover .arrow {
+    opacity: 1; /* aparecen al acercar el cursor */
+  }
+
+  .arrow:hover {
+    color: rgba(0,64,128,1);
+  }
+
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
-  @media(max-width: 900px) { .carousel img { width: 200px; height: 200px; transform: scale(1.4); } }
-  @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
-  @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
-
-  /* ============================ */
-  /* MODO MÓVIL */
-  /* ============================ */
-  .mobile-gallery-wrapper {
-    display: none;
-    width: 100%;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .mobile-gallery {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    padding: 0 15%; /* padding lateral para centrar primera y última */
-    gap: 20px;
-  }
-
-  .mobile-gallery::-webkit-scrollbar { display: none; }
-
-  .mobile-gallery .card {
-    flex: 0 0 70%; /* tarjeta más pequeña para móvil */
-    scroll-snap-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .mobile-gallery .card img {
-    width: 100%;
-    height: auto;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    background: #fff;
-  }
-
-  .indicators {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-
-  .indicators .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #ccc;
-    transition: background 0.3s;
-  }
-
-  .indicators .dot.active { background: #004080; }
-
+  /* ====================== */
+  /* Modo celular */
+  /* ====================== */
   @media(max-width: 600px) {
-    .carousel-container { display: none; }
-    .mobile-gallery-wrapper { display: flex; }
+    h1 {
+      font-size: 2em;
+      margin: 20px 0 10px 0;
+    }
+
+    .carousel-container {
+      padding: 40px 0;
+    }
+
+    .carousel {
+      gap: 20px;
+    }
+
+    .carousel img {
+      width: 70%; /* ocupa el 70% de la pantalla */
+      height: auto;
+      border-radius: 15px;
+      transform: scale(1);
+    }
+
+    .indicators {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 15px; /* un poco más abajo de la tarjeta */
+      margin-bottom: 20px;
+    }
+
+    .indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #ccc;
+    }
+
+    .indicator.active {
+      background-color: #004080;
+    }
   }
 </style>
 </head>
@@ -147,28 +143,17 @@
 
 <h1>Comercios Adheridos</h1>
 
-<!-- DESKTOP -->
-<div class="carousel-container">
-  <div class="carousel" id="carousel"></div>
-  <div class="arrow left" id="arrow-left">&#9664;</div>
-  <div class="arrow right" id="arrow-right">&#9654;</div>
+<div class="carousel-container" id="carousel-mobile-container">
+  <div class="carousel" id="carousel-mobile"></div>
 </div>
 
-<!-- MOBILE -->
-<div class="mobile-gallery-wrapper">
-  <div class="mobile-gallery" id="mobile-gallery"></div>
-  <div class="indicators" id="indicators"></div>
-</div>
+<div class="indicators" id="indicators"></div>
 
 <script>
-const carousel = document.getElementById("carousel");
-const arrowLeft = document.getElementById("arrow-left");
-const arrowRight = document.getElementById("arrow-right");
-const mobileGallery = document.getElementById("mobile-gallery");
+const carousel = document.getElementById("carousel-mobile");
+const indicatorsContainer = document.getElementById("indicators");
 let comercios = [];
-let scrollAmount = 0;
-let isPaused = false;
-let speed = 1.5;
+let currentIndex = 0;
 
 // Cargar imágenes desde JSON
 fetch('comercios/comercios.json')
@@ -176,72 +161,68 @@ fetch('comercios/comercios.json')
   .then(data => {
     comercios = data;
     initCarousel();
-    initMobile();
-    requestAnimationFrame(autoScroll);
+    updateIndicators();
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
-// ================= DESKTOP =================
 function initCarousel() {
-  const allImages = [...comercios, ...comercios, ...comercios];
-  allImages.forEach((imgSrc) => {
+  comercios.forEach((imgSrc, index) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
-    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
     carousel.appendChild(img);
   });
-}
 
-function autoScroll() {
-  if(!isPaused) {
-    scrollAmount += speed;
-    if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
-    if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
-  }
-  carousel.style.transform = `translateX(${-scrollAmount}px)`;
-  requestAnimationFrame(autoScroll);
-}
-
-arrowRight.addEventListener("mouseenter", () => { speed = 6; });
-arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
-arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
-arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
-
-// ================= MOBILE =================
-function initMobile() {
-  comercios.forEach(src => {
-    const card = document.createElement("div");
-    card.className = "card";
-    const img = document.createElement("img");
-    img.src = `comercios/${src}`;
-    img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    card.appendChild(img);
-    mobileGallery.appendChild(card);
-  });
-
-  initIndicators();
-}
-
-function initIndicators() {
-  const indicators = document.getElementById("indicators");
-  indicators.innerHTML = "";
-  comercios.forEach((_, index) => {
+  // Crear indicadores
+  comercios.forEach((_, idx) => {
     const dot = document.createElement("div");
-    dot.className = "dot";
-    if(index === 0) dot.classList.add("active");
-    indicators.appendChild(dot);
+    dot.classList.add("indicator");
+    if(idx === 0) dot.classList.add("active");
+    indicatorsContainer.appendChild(dot);
   });
 
-  mobileGallery.addEventListener("scroll", () => {
-    const scrollLeft = mobileGallery.scrollLeft;
-    const cardWidth = mobileGallery.querySelector(".card").offsetWidth + 20; // incluir margen
-    const index = Math.round(scrollLeft / cardWidth);
-    const dots = indicators.querySelectorAll(".dot");
-    dots.forEach(d => d.classList.remove("active"));
-    if(dots[index]) dots[index].classList.add("active");
+  // Desplazamiento con swipe
+  let startX = 0;
+  let isDragging = false;
+
+  carousel.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
   });
+
+  carousel.addEventListener("touchmove", (e) => {
+    if(!isDragging) return;
+    const moveX = e.touches[0].clientX;
+    const diff = startX - moveX;
+    if(diff > 50) { next(); isDragging = false; }
+    if(diff < -50) { prev(); isDragging = false; }
+  });
+
+  carousel.addEventListener("touchend", () => { isDragging = false; });
+}
+
+function updateIndicators() {
+  const dots = indicatorsContainer.children;
+  for(let i=0;i<dots.length;i++){
+    dots[i].classList.remove("active");
+  }
+  if(currentIndex < dots.length) dots[currentIndex].classList.add("active");
+}
+
+function next() {
+  if(currentIndex < comercios.length -1) currentIndex++;
+  scrollToIndex();
+}
+
+function prev() {
+  if(currentIndex > 0) currentIndex--;
+  scrollToIndex();
+}
+
+function scrollToIndex() {
+  const width = carousel.children[currentIndex].offsetWidth + 20; // gap=20
+  carousel.style.transform = `translateX(${-currentIndex * width}px)`;
+  updateIndicators();
 }
 </script>
 
