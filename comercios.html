@@ -10,13 +10,7 @@
     font-family: 'Arial', sans-serif;
     background: #f9f9f9;
     color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
   }
-
   h1 {
     margin: 40px 0 20px 0;
     font-size: 3em;
@@ -24,7 +18,7 @@
     text-align: center;
   }
 
-  /* ================= DESKTOP ================= */
+  /* ========== DESKTOP ========== */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -36,13 +30,11 @@
     position: relative;
     perspective: 1200px;
   }
-
   .carousel {
     display: flex;
     gap: 50px;
     transition: transform 0.2s linear;
   }
-
   .carousel img {
     width: 250px;
     height: 250px;
@@ -53,7 +45,6 @@
     cursor: pointer;
     transform-origin: center center;
   }
-
   .carousel img { transform: scale(1.5); box-shadow: none; z-index: 5; }
   .carousel img.hovered { transform: scale(1.7); z-index: 20; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
 
@@ -71,7 +62,6 @@
     border-radius: 50%;
     opacity: 0;
   }
-
   .carousel-container:hover .arrow { opacity: 1; }
   .arrow:hover { color: rgba(0,64,128,1); }
   .arrow.left { left: 10px; }
@@ -81,49 +71,48 @@
   @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
   @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
 
-  /* ================= MOBILE ================= */
-  #mobile-carousel-container {
-    display: none;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  #carousel-mobile {
-    display: flex;
-    gap: 15px;
-    transition: transform 0.3s ease;
-  }
-
-  #carousel-mobile img {
-    width: 70%;
-    border-radius: 15px;
-    flex-shrink: 0;
-    object-fit: contain;
-  }
-
-  #dots {
-    display: flex;
-    gap: 6px;
-    margin-top: 15px;
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
-    background: #ccc;
-    border-radius: 50%;
-  }
-
-  .dot.active { background: #004080; }
-
+  /* ========== MOBILE ========== */
   @media(max-width: 768px) {
+    body { overflow-y: hidden; }
     .carousel-container { display: none; }
-    #mobile-carousel-container { display: flex; }
-  }
 
+    #mobile-carousel-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      justify-content: center;
+    }
+
+    #carousel-mobile {
+      display: flex;
+      gap: 15px;
+      transition: transform 0.3s ease;
+      touch-action: pan-x;
+    }
+
+    #carousel-mobile img {
+      width: 70%;
+      border-radius: 15px;
+      flex-shrink: 0;
+    }
+
+    #dots {
+      display: flex;
+      gap: 6px;
+      margin-top: 25px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: #ccc;
+      border-radius: 50%;
+      transition: background 0.3s;
+    }
+    .dot.active { background: #004080; }
+  }
 </style>
 </head>
 <body>
@@ -144,39 +133,51 @@
 </div>
 
 <script>
-/* ================= DESKTOP ================= */
+let comercios = [];
 const carousel = document.getElementById("carousel");
 const arrowLeft = document.getElementById("arrow-left");
 const arrowRight = document.getElementById("arrow-right");
-let comercios = [];
+
+// Mobile
+const carouselMobile = document.getElementById("carousel-mobile");
+const dotsContainer = document.getElementById("dots");
+let currentIndex = 0;
+
+// Cargar imágenes desde JSON
+fetch('comercios/comercios.json')
+.then(res => res.json())
+.then(data => {
+  comercios = data;
+  initDesktop();
+  initMobile();
+  requestAnimationFrame(autoScroll);
+})
+.catch(err => console.error("Error cargando comercios:", err));
+
+/* ===== DESKTOP ===== */
 let scrollAmount = 0;
 let isPaused = false;
 let speed = 1.5;
 
-fetch('comercios/comercios.json')
-  .then(res => res.json())
-  .then(data => {
-    comercios = data;
-    initCarousel();
-    initMobileCarousel();
-    requestAnimationFrame(autoScroll);
-  })
-  .catch(err => console.error("Error cargando comercios:", err));
-
-function initCarousel() {
+function initDesktop() {
   const allImages = [...comercios, ...comercios, ...comercios];
-  allImages.forEach(imgSrc => {
+  allImages.forEach(src => {
     const img = document.createElement("img");
-    img.src = `comercios/${imgSrc}`;
+    img.src = `comercios/${src}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
-    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
+    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused=true; });
+    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused=false; });
     carousel.appendChild(img);
   });
+
+  arrowRight.addEventListener("mouseenter", () => { speed = 6; });
+  arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
+  arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
+  arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
 }
 
 function autoScroll() {
-  if(!isPaused) {
+  if(!isPaused){
     scrollAmount += speed;
     if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
     if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
@@ -185,65 +186,55 @@ function autoScroll() {
   requestAnimationFrame(autoScroll);
 }
 
-arrowRight.addEventListener("mouseenter", () => { speed = 6; });
-arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
-arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
-arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
-
-/* ================= MOBILE ================= */
-const carouselMobile = document.getElementById("carousel-mobile");
-const dotsContainer = document.getElementById("dots");
-let currentIndex = 0;
-
-function initMobileCarousel() {
-  comercios.forEach((imgSrc, idx) => {
+/* ===== MOBILE ===== */
+function initMobile() {
+  comercios.forEach((src, i) => {
     const img = document.createElement("img");
-    img.src = `comercios/${imgSrc}`;
+    img.src = `comercios/${src}`;
     carouselMobile.appendChild(img);
 
     const dot = document.createElement("div");
     dot.classList.add("dot");
-    if(idx===0) dot.classList.add("active");
+    if(i===0) dot.classList.add("active");
     dotsContainer.appendChild(dot);
   });
   updateCarouselMobile();
+
+  // Swipe
+  let startX=0, startY=0, isDragging=false;
+
+  carouselMobile.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+  }, {passive:true});
+
+  carouselMobile.addEventListener("touchmove", e => {
+    if(!isDragging) return;
+    const moveX = e.touches[0].clientX;
+    const moveY = e.touches[0].clientY;
+    if(Math.abs(startX - moveX) > Math.abs(startY - moveY)) e.preventDefault();
+  }, {passive:false});
+
+  carouselMobile.addEventListener("touchend", e => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = startX - endX;
+    if(diff > 50) next();
+    else if(diff < -50) prev();
+    isDragging = false;
+  });
 }
-
-// Manejo de swipe horizontal
-let startX = 0, startY = 0, isDragging = false;
-
-carouselMobile.addEventListener("touchstart", (e) => {
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
-  isDragging = true;
-}, { passive: false });
-
-carouselMobile.addEventListener("touchmove", (e) => {
-  if(!isDragging) return;
-  const moveX = e.touches[0].clientX;
-  const moveY = e.touches[0].clientY;
-  const diffX = startX - moveX;
-  const diffY = startY - moveY;
-
-  if(Math.abs(diffX) > Math.abs(diffY)) {
-    e.preventDefault();
-    if(diffX > 50) { next(); isDragging=false; }
-    if(diffX < -50) { prev(); isDragging=false; }
-  }
-}, { passive: false });
-
-carouselMobile.addEventListener("touchend", () => { isDragging=false; });
 
 function updateCarouselMobile() {
-  const offset = -currentIndex * 70; // cada tarjeta 70% del ancho
-  carouselMobile.style.transform = `translateX(${offset}vw)`;
-  document.querySelectorAll(".dot").forEach((dot, i) => dot.classList.toggle("active", i===currentIndex));
+  const imgWidth = carouselMobile.querySelector("img").offsetWidth + 15;
+  const offset = -currentIndex * imgWidth;
+  carouselMobile.style.transform = `translateX(${offset}px)`;
+  document.querySelectorAll(".dot").forEach((dot,i)=>dot.classList.toggle("active", i===currentIndex));
 }
 
-function next() { if(currentIndex < comercios.length-1) { currentIndex++; updateCarouselMobile(); } }
-function prev() { if(currentIndex > 0) { currentIndex--; updateCarouselMobile(); } }
+function next(){ if(currentIndex < comercios.length -1){ currentIndex++; updateCarouselMobile(); } }
+function prev(){ if(currentIndex>0){ currentIndex--; updateCarouselMobile(); } }
 
 </script>
-
 </body>
 </html>
