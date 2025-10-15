@@ -25,7 +25,7 @@
     text-align: center;
   }
 
-  /* ---------- ESCRITORIO ---------- */
+  /* ------------------ Escritorio ------------------ */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -53,6 +53,9 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
     transform-origin: center center;
+  }
+
+  .carousel img {
     transform: scale(1.5);
     box-shadow: none;
     z-index: 5;
@@ -79,70 +82,63 @@
     opacity: 0;
   }
 
-  .carousel-container:hover .arrow {
-    opacity: 1;
-  }
-
-  .arrow:hover {
-    color: rgba(0,64,128,1);
-  }
-
+  .carousel-container:hover .arrow { opacity: 1; }
+  .arrow:hover { color: rgba(0,64,128,1); }
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
-  @media(max-width: 900px) {
-    .carousel img { width: 200px; height: 200px; transform: scale(1.4); }
-  }
+  @media(max-width: 900px) { .carousel img { width: 200px; height: 200px; transform: scale(1.4); } }
+  @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
+  @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
 
-  @media(max-width: 600px) {
-    .carousel img { width: 160px; height: 160px; transform: scale(1.3); }
-  }
-
-  @media(max-width: 400px) {
-    .carousel img { width: 140px; height: 140px; transform: scale(1.2); }
-  }
-
-  /* ---------- MÓVIL DINÁMICO ---------- */
+  /* ------------------ Móvil ------------------ */
   @media(max-width: 768px) {
-    h1 { margin: 20px 0 10px 0; font-size: 2.2em; }
-
-    .carousel-container { padding: 0; overflow: hidden; }
+    .carousel-container {
+      padding: 20px 0;
+    }
     .carousel {
       display: flex;
-      transition: transform 0.3s ease;
-      will-change: transform;
-      padding: 20px 0;
-      justify-content: center;
+      gap: 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .carousel::-webkit-scrollbar { display: none; }
 
     .carousel img {
       width: 70%;
-      max-width: 220px; /* más pequeña */
       height: auto;
+      transform: scale(1);
+      flex-shrink: 0;
+      scroll-snap-align: center;
       border-radius: 15px;
-      margin: 0 10px;
-      transition: transform 0.4s ease, opacity 0.4s ease;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
     }
 
-    /* Ocultar flechas en móvil */
-    .arrow { display: none; }
+    .carousel img.hovered {
+      transform: scale(1);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
 
     /* Puntitos indicadores */
     .dots {
-      text-align: center;
-      margin: 15px 0 25px 0; /* más abajo */
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+      gap: 6px;
     }
     .dot {
-      display: inline-block;
       width: 10px;
       height: 10px;
-      margin: 0 5px;
       background: #ccc;
       border-radius: 50%;
       transition: background 0.3s;
     }
-    .dot.active { background: #004080; }
+    .dot.active {
+      background: #004080;
+    }
   }
 </style>
 </head>
@@ -152,20 +148,15 @@
 
 <div class="carousel-container">
   <div class="carousel" id="carousel"></div>
-  <div class="arrow left" id="arrow-left">&#9664;</div>
-  <div class="arrow right" id="arrow-right">&#9654;</div>
 </div>
 
+<!-- Puntitos indicadores para móvil -->
 <div class="dots" id="dots"></div>
 
 <script>
 const carousel = document.getElementById("carousel");
-const arrowLeft = document.getElementById("arrow-left");
-const arrowRight = document.getElementById("arrow-right");
 const dotsContainer = document.getElementById("dots");
-
 let comercios = [];
-let currentIndex = 0;
 
 // Cargar imágenes desde JSON
 fetch('comercios/comercios.json')
@@ -173,90 +164,40 @@ fetch('comercios/comercios.json')
   .then(data => {
     comercios = data;
     initCarousel();
-    updateCarouselMobile();
-    createDots();
+    updateDots();
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
 function initCarousel() {
-  comercios.forEach((imgSrc) => {
+  comercios.forEach((imgSrc, index) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
     carousel.appendChild(img);
-  });
-}
 
-// ---------- MÓVIL DESLIZAMIENTO ---------- //
-function updateCarouselMobile() {
-  const imgs = carousel.querySelectorAll('img');
-  imgs.forEach((img,i)=>{
-    if(i === currentIndex){
-      img.style.transform = "scale(1) translateY(0)";
-      img.style.opacity = "1";
-    } else {
-      img.style.transform = "scale(0.8) translateY(10px)";
-      img.style.opacity = "0.5";
-    }
-  });
-  updateDots();
-}
-
-function nextSlide() {
-  if(currentIndex < comercios.length-1){
-    currentIndex++;
-    updateCarouselMobile();
-    scrollCarousel();
-  }
-}
-
-function prevSlide() {
-  if(currentIndex > 0){
-    currentIndex--;
-    updateCarouselMobile();
-    scrollCarousel();
-  }
-}
-
-function scrollCarousel(){
-  const imgs = carousel.querySelectorAll('img');
-  const center = window.innerWidth/2;
-  const img = imgs[currentIndex];
-  const imgCenter = img.offsetLeft + img.offsetWidth/2;
-  const scroll = imgCenter - center;
-  carousel.scrollTo({ left: scroll, behavior: 'smooth' });
-}
-
-// ---------- DOTS ---------- //
-function createDots(){
-  dotsContainer.innerHTML = '';
-  comercios.forEach((_,i)=>{
-    const dot = document.createElement('div');
-    dot.classList.add('dot');
-    if(i===currentIndex) dot.classList.add('active');
-    dot.addEventListener('click', ()=>{ currentIndex=i; updateCarouselMobile(); scrollCarousel(); });
+    // Crear puntito
+    const dot = document.createElement("div");
+    dot.classList.add("dot");
+    if(index === 0) dot.classList.add("active");
     dotsContainer.appendChild(dot);
   });
 }
 
-function updateDots(){
-  const allDots = dotsContainer.querySelectorAll('.dot');
-  allDots.forEach((dot,i)=> dot.classList.toggle('active', i===currentIndex));
-}
-
-// ---------- EVENTOS TOUCH ---------- //
-let startX = 0;
-carousel.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
-carousel.addEventListener('touchend', e => {
-  const endX = e.changedTouches[0].clientX;
-  if(endX - startX > 50) prevSlide();
-  else if(startX - endX > 50) nextSlide();
+// Actualizar puntitos según scroll
+carousel.addEventListener('scroll', () => {
+  const scrollLeft = carousel.scrollLeft;
+  const width = carousel.offsetWidth;
+  const children = carousel.children;
+  let index = 0;
+  for(let i=0;i<children.length;i++){
+    const childCenter = children[i].offsetLeft + children[i].offsetWidth/2;
+    if(childCenter - scrollLeft < width/2) index = i;
+  }
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===index));
 });
 
-// Flechas escritorio
-arrowRight.addEventListener("mouseenter", () => { carousel.scrollLeft += 50; });
-arrowLeft.addEventListener("mouseenter", () => { carousel.scrollLeft -= 50; });
-
+// Evitar scroll vertical al deslizar horizontal
+carousel.addEventListener('touchmove', (e)=>{ e.stopPropagation(); }, {passive:true});
 </script>
 
 </body>
