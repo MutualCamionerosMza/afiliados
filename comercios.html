@@ -24,9 +24,7 @@
     text-align: center;
   }
 
-  /* ====================== */
-  /* Modo escritorio (igual que antes) */
-  /* ====================== */
+  /* ================= DESKTOP ================= */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -56,11 +54,8 @@
     transform-origin: center center;
   }
 
-  .carousel img.hovered {
-    transform: scale(1.7);
-    z-index: 20;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  }
+  .carousel img { transform: scale(1.5); box-shadow: none; z-index: 5; }
+  .carousel img.hovered { transform: scale(1.7); z-index: 20; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
 
   .arrow {
     position: absolute;
@@ -82,141 +77,172 @@
   .arrow.left { left: 10px; }
   .arrow.right { right: 10px; }
 
-  /* ====================== */
-  /* Modo celular */
-  /* ====================== */
-  @media(max-width: 600px) {
-    h1 {
-      font-size: 2em;
-      margin: 20px 0 10px 0;
-    }
+  @media(max-width: 900px) { .carousel img { width: 200px; height: 200px; transform: scale(1.4); } }
+  @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
+  @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
 
-    .carousel-container {
-      padding: 40px 0;
-    }
-
-    .carousel {
-      gap: 15px;
-      transition: transform 0.5s ease; /* transición suave */
-    }
-
-    .carousel img {
-      width: 70%;
-      height: auto;
-      border-radius: 15px;
-      transform: scale(1);
-      flex-shrink: 0;
-      transition: transform 0.5s ease;
-    }
-
-    .indicators {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 20px;
-      margin-bottom: 20px;
-    }
-
-    .indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: #ccc;
-      transition: background-color 0.3s;
-    }
-
-    .indicator.active {
-      background-color: #004080;
-    }
+  /* ================= MOBILE ================= */
+  #mobile-carousel-container {
+    display: none;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
   }
+
+  #carousel-mobile {
+    display: flex;
+    gap: 15px;
+    transition: transform 0.3s ease;
+  }
+
+  #carousel-mobile img {
+    width: 70%;
+    border-radius: 15px;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  #dots {
+    display: flex;
+    gap: 6px;
+    margin-top: 15px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    background: #ccc;
+    border-radius: 50%;
+  }
+
+  .dot.active { background: #004080; }
+
+  @media(max-width: 768px) {
+    .carousel-container { display: none; }
+    #mobile-carousel-container { display: flex; }
+  }
+
 </style>
 </head>
 <body>
 
 <h1>Comercios Adheridos</h1>
 
-<div class="carousel-container" id="carousel-mobile-container">
-  <div class="carousel" id="carousel-mobile"></div>
+<!-- DESKTOP -->
+<div class="carousel-container">
+  <div class="carousel" id="carousel"></div>
+  <div class="arrow left" id="arrow-left">&#9664;</div>
+  <div class="arrow right" id="arrow-right">&#9654;</div>
 </div>
 
-<div class="indicators" id="indicators"></div>
+<!-- MOBILE -->
+<div id="mobile-carousel-container">
+  <div id="carousel-mobile"></div>
+  <div id="dots"></div>
+</div>
 
 <script>
-const carousel = document.getElementById("carousel-mobile");
-const indicatorsContainer = document.getElementById("indicators");
+/* ================= DESKTOP ================= */
+const carousel = document.getElementById("carousel");
+const arrowLeft = document.getElementById("arrow-left");
+const arrowRight = document.getElementById("arrow-right");
 let comercios = [];
-let currentIndex = 0;
+let scrollAmount = 0;
+let isPaused = false;
+let speed = 1.5;
 
-// Cargar imágenes desde JSON
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
     comercios = data;
     initCarousel();
-    updateIndicators();
+    initMobileCarousel();
+    requestAnimationFrame(autoScroll);
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
 function initCarousel() {
-  comercios.forEach((imgSrc, index) => {
+  const allImages = [...comercios, ...comercios, ...comercios];
+  allImages.forEach(imgSrc => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
+    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
+    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
     carousel.appendChild(img);
   });
-
-  // Crear indicadores
-  comercios.forEach((_, idx) => {
-    const dot = document.createElement("div");
-    dot.classList.add("indicator");
-    if(idx === 0) dot.classList.add("active");
-    indicatorsContainer.appendChild(dot);
-  });
-
-  // Swipe
-  let startX = 0;
-  let isDragging = false;
-
-  carousel.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
-  });
-
-  carousel.addEventListener("touchmove", (e) => {
-    if(!isDragging) return;
-    const moveX = e.touches[0].clientX;
-    const diff = startX - moveX;
-    if(diff > 50) { next(); isDragging = false; }
-    if(diff < -50) { prev(); isDragging = false; }
-  });
-
-  carousel.addEventListener("touchend", () => { isDragging = false; });
 }
 
-function updateIndicators() {
-  const dots = indicatorsContainer.children;
-  for(let i=0;i<dots.length;i++){
-    dots[i].classList.remove("active");
+function autoScroll() {
+  if(!isPaused) {
+    scrollAmount += speed;
+    if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
+    if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
   }
-  if(currentIndex < dots.length) dots[currentIndex].classList.add("active");
+  carousel.style.transform = `translateX(${-scrollAmount}px)`;
+  requestAnimationFrame(autoScroll);
 }
 
-function next() {
-  if(currentIndex < comercios.length -1) currentIndex++;
-  scrollToIndex();
+arrowRight.addEventListener("mouseenter", () => { speed = 6; });
+arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
+arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
+arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
+
+/* ================= MOBILE ================= */
+const carouselMobile = document.getElementById("carousel-mobile");
+const dotsContainer = document.getElementById("dots");
+let currentIndex = 0;
+
+function initMobileCarousel() {
+  comercios.forEach((imgSrc, idx) => {
+    const img = document.createElement("img");
+    img.src = `comercios/${imgSrc}`;
+    carouselMobile.appendChild(img);
+
+    const dot = document.createElement("div");
+    dot.classList.add("dot");
+    if(idx===0) dot.classList.add("active");
+    dotsContainer.appendChild(dot);
+  });
+  updateCarouselMobile();
 }
 
-function prev() {
-  if(currentIndex > 0) currentIndex--;
-  scrollToIndex();
+// Manejo de swipe horizontal
+let startX = 0, startY = 0, isDragging = false;
+
+carouselMobile.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+  startY = e.touches[0].clientY;
+  isDragging = true;
+}, { passive: false });
+
+carouselMobile.addEventListener("touchmove", (e) => {
+  if(!isDragging) return;
+  const moveX = e.touches[0].clientX;
+  const moveY = e.touches[0].clientY;
+  const diffX = startX - moveX;
+  const diffY = startY - moveY;
+
+  if(Math.abs(diffX) > Math.abs(diffY)) {
+    e.preventDefault();
+    if(diffX > 50) { next(); isDragging=false; }
+    if(diffX < -50) { prev(); isDragging=false; }
+  }
+}, { passive: false });
+
+carouselMobile.addEventListener("touchend", () => { isDragging=false; });
+
+function updateCarouselMobile() {
+  const offset = -currentIndex * 70; // cada tarjeta 70% del ancho
+  carouselMobile.style.transform = `translateX(${offset}vw)`;
+  document.querySelectorAll(".dot").forEach((dot, i) => dot.classList.toggle("active", i===currentIndex));
 }
 
-function scrollToIndex() {
-  const width = carousel.children[currentIndex].offsetWidth + 15; // gap
-  const offset = -currentIndex * width + (window.innerWidth - carousel.children[currentIndex].offsetWidth)/2; // centrar
-  carousel.style.transform = `translateX(${offset}px)`;
-  updateIndicators();
-}
+function next() { if(currentIndex < comercios.length-1) { currentIndex++; updateCarouselMobile(); } }
+function prev() { if(currentIndex > 0) { currentIndex--; updateCarouselMobile(); } }
+
 </script>
 
 </body>
