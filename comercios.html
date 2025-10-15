@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comercios Adheridos - Móvil</title>
+<title>Comercios Adheridos</title>
 <style>
   body {
     margin: 0;
@@ -14,47 +14,109 @@
     flex-direction: column;
     align-items: center;
     padding: 20px 0;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
   }
 
   h1 {
-    font-size: 2em;
+    font-size: 3em;
     color: #004080;
     text-align: center;
-    margin-bottom: 15px;
+    margin: 40px 0 20px 0;
   }
 
-  .carousel-wrapper {
-    position: relative;
+  /* ==========================
+     DESKTOP CAROUSEL
+     ========================== */
+  .carousel-container {
     width: 100%;
-    flex: 1;
+    max-width: 1300px;
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 100px 0;
+    position: relative;
+    perspective: 1200px;
   }
 
   .carousel {
+    display: flex;
+    gap: 50px;
+    transition: transform 0.2s linear;
+  }
+
+  .carousel img {
+    width: 250px;
+    height: 250px;
+    object-fit: contain;
+    border-radius: 15px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    transform-origin: center center;
+  }
+
+  .carousel img.hovered {
+    transform: scale(1.7);
+    z-index: 20;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5em;
+    cursor: pointer;
+    user-select: none;
+    color: rgba(0,64,128,0.5);
+    transition: color 0.2s, opacity 0.3s;
+    z-index: 50;
+    padding: 5px;
+    border-radius: 50%;
+    opacity: 0; /* invisibles por defecto */
+  }
+
+  .carousel-container:hover .arrow { opacity: 1; }
+  .arrow:hover { color: rgba(0,64,128,1); }
+  .arrow.left { left: 10px; }
+  .arrow.right { right: 10px; }
+
+  /* ==========================
+     MOBILE GALLERY
+     ========================== */
+  .mobile-gallery {
+    display: none; /* hidden by default */
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .mobile-carousel {
     display: flex;
     height: 100%;
     transition: transform 0.3s ease;
   }
 
   .card {
-    flex: 0 0 100%;
+    flex: 0 0 85%;
+    margin-right: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
     box-sizing: border-box;
   }
 
   .card img {
-    width: 90%;
+    width: 100%;
     height: auto;
-    max-height: 80%;
+    max-height: 75%;
     object-fit: contain;
     border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    background: #fff;
   }
 
   .card h2 {
@@ -62,6 +124,7 @@
     color: #004080;
     text-align: center;
     font-size: 1.2em;
+    word-break: break-word;
   }
 
   .dots {
@@ -78,74 +141,133 @@
     border-radius: 50%;
   }
 
-  .dot.active {
-    background: #004080;
+  .dot.active { background: #004080; }
+
+  /* ==========================
+     RESPONSIVE
+     ========================== */
+  @media(max-width: 900px) {
+    .carousel img { width: 200px; height: 200px; transform: scale(1.4); }
+  }
+
+  @media(max-width: 600px) {
+    .carousel-container { display: none; }
+    .mobile-gallery { display: block; }
+  }
+
+  @media(max-width: 400px) {
+    .carousel img { width: 140px; height: 140px; transform: scale(1.2); }
   }
 </style>
 </head>
 <body>
 
 <h1>Comercios Adheridos</h1>
-<div class="carousel-wrapper">
-  <div class="carousel" id="carousel"></div>
+
+<!-- DESKTOP CAROUSEL -->
+<div class="carousel-container">
+  <div class="carousel" id="desktop-carousel"></div>
+  <div class="arrow left" id="arrow-left">&#9664;</div>
+  <div class="arrow right" id="arrow-right">&#9654;</div>
+</div>
+
+<!-- MOBILE GALLERY -->
+<div class="mobile-gallery">
+  <div class="mobile-carousel" id="mobile-carousel"></div>
   <div class="dots" id="dots"></div>
 </div>
 
 <script>
-const carousel = document.getElementById("carousel");
-const dotsContainer = document.getElementById("dots");
 let comercios = [];
-let currentIndex = 0;
 
-// Cargar imágenes desde JSON
+// Fetch images
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
     comercios = data;
-    initCarousel();
-    updateDots();
+    initDesktop();
+    initMobile();
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
-function initCarousel() {
-  comercios.forEach((imgSrc, index) => {
+/* ===================== DESKTOP ===================== */
+const desktopCarousel = document.getElementById("desktop-carousel");
+const arrowLeft = document.getElementById("arrow-left");
+const arrowRight = document.getElementById("arrow-right");
+let scrollAmount = 0;
+let isPaused = false;
+let speed = 1.5;
+
+function initDesktop() {
+  const allImages = [...comercios, ...comercios, ...comercios];
+  allImages.forEach(src => {
+    const img = document.createElement("img");
+    img.src = `comercios/${src}`;
+    img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
+    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused=true; });
+    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused=false; });
+    desktopCarousel.appendChild(img);
+  });
+  requestAnimationFrame(autoScrollDesktop);
+}
+
+function autoScrollDesktop() {
+  if(!isPaused){
+    scrollAmount += speed;
+    if(scrollAmount >= desktopCarousel.scrollWidth / 3) scrollAmount = 0;
+    if(scrollAmount < 0) scrollAmount = desktopCarousel.scrollWidth / 3;
+  }
+  desktopCarousel.style.transform = `translateX(${-scrollAmount}px)`;
+  requestAnimationFrame(autoScrollDesktop);
+}
+
+arrowRight.addEventListener("mouseenter", () => { speed = 6; });
+arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
+arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
+arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
+
+/* ===================== MOBILE ===================== */
+const mobileCarousel = document.getElementById("mobile-carousel");
+const dotsContainer = document.getElementById("dots");
+let currentIndex = 0;
+
+function initMobile() {
+  comercios.forEach((src, index) => {
     const card = document.createElement("div");
     card.className = "card";
 
     const img = document.createElement("img");
-    img.src = `comercios/${imgSrc}`;
+    img.src = `comercios/${src}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
     card.appendChild(img);
 
     const title = document.createElement("h2");
-    title.textContent = imgSrc.replace(/\.[^/.]+$/, ""); // nombre sin extensión
+    title.textContent = src.replace(/\.[^/.]+$/, "");
     card.appendChild(title);
 
-    carousel.appendChild(card);
+    mobileCarousel.appendChild(card);
 
-    // Dots
     const dot = document.createElement("div");
     dot.className = "dot";
     dot.addEventListener("click", () => goTo(index));
     dotsContainer.appendChild(dot);
   });
 
-  // Swipe touch events
+  updateDots();
+
+  // Swipe
   let startX = 0;
   let isDragging = false;
-
-  carousel.addEventListener("touchstart", e => {
+  mobileCarousel.addEventListener("touchstart", e => {
     startX = e.touches[0].clientX;
     isDragging = true;
   });
-
-  carousel.addEventListener("touchmove", e => {
+  mobileCarousel.addEventListener("touchmove", e => {
     if(!isDragging) return;
     const dx = e.touches[0].clientX - startX;
-    carousel.style.transform = `translateX(${-currentIndex * 100 + dx / carousel.offsetWidth * 100}%)`;
+    mobileCarousel.style.transform = `translateX(${-currentIndex*85 + dx/mobileCarousel.offsetWidth*100}%)`;
   });
-
-  carousel.addEventListener("touchend", e => {
+  mobileCarousel.addEventListener("touchend", e => {
     isDragging = false;
     const dx = e.changedTouches[0].clientX - startX;
     if(dx < -50 && currentIndex < comercios.length -1) currentIndex++;
@@ -155,7 +277,7 @@ function initCarousel() {
 }
 
 function updateCarousel() {
-  carousel.style.transform = `translateX(${-currentIndex * 100}%)`;
+  mobileCarousel.style.transform = `translateX(${-currentIndex*85}%)`;
   updateDots();
 }
 
@@ -166,7 +288,7 @@ function goTo(index) {
 
 function updateDots() {
   const dots = dotsContainer.querySelectorAll(".dot");
-  dots.forEach((dot, i) => dot.classList.toggle("active", i === currentIndex));
+  dots.forEach((dot,i)=> dot.classList.toggle("active", i===currentIndex));
 }
 </script>
 
