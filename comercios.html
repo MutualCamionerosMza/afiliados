@@ -25,7 +25,7 @@
     text-align: center;
   }
 
-  /* ------------------ Escritorio ------------------ */
+  /* ------------------ Escritorio (sin cambios) ------------------ */
   .carousel-container {
     width: 100%;
     max-width: 1300px;
@@ -91,7 +91,7 @@
   @media(max-width: 600px) { .carousel img { width: 160px; height: 160px; transform: scale(1.3); } }
   @media(max-width: 400px) { .carousel img { width: 140px; height: 140px; transform: scale(1.2); } }
 
-  /* ------------------ Móvil ------------------ */
+  /* ------------------ Móvil (solo aquí cambiamos) ------------------ */
   @media(max-width: 768px) {
     .carousel-container {
       padding: 20px 0;
@@ -126,7 +126,7 @@
     .dots {
       display: flex;
       justify-content: center;
-      margin-top: 10px;
+      margin-top: 12px;
       gap: 6px;
     }
     .dot {
@@ -148,15 +148,22 @@
 
 <div class="carousel-container">
   <div class="carousel" id="carousel"></div>
+  <div class="arrow left" id="arrow-left">&#9664;</div>
+  <div class="arrow right" id="arrow-right">&#9654;</div>
 </div>
 
-<!-- Puntitos indicadores para móvil -->
+<!-- Puntitos indicadores solo para móvil -->
 <div class="dots" id="dots"></div>
 
 <script>
 const carousel = document.getElementById("carousel");
 const dotsContainer = document.getElementById("dots");
+const arrowLeft = document.getElementById("arrow-left");
+const arrowRight = document.getElementById("arrow-right");
 let comercios = [];
+let scrollAmount = 0;
+let isPaused = false;
+let speed = 1.5;
 
 // Cargar imágenes desde JSON
 fetch('comercios/comercios.json')
@@ -164,40 +171,64 @@ fetch('comercios/comercios.json')
   .then(data => {
     comercios = data;
     initCarousel();
-    updateDots();
+    requestAnimationFrame(autoScroll);
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
 function initCarousel() {
-  comercios.forEach((imgSrc, index) => {
+  const allImages = [...comercios, ...comercios, ...comercios]; // loop suave
+  allImages.forEach((imgSrc, index) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    carousel.appendChild(img);
 
-    // Crear puntito
-    const dot = document.createElement("div");
-    dot.classList.add("dot");
-    if(index === 0) dot.classList.add("active");
-    dotsContainer.appendChild(dot);
+    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
+    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
+
+    carousel.appendChild(img);
   });
+
+  // Puntitos indicadores (solo móvil)
+  if(window.innerWidth <= 768) {
+    comercios.forEach((_, idx) => {
+      const dot = document.createElement("div");
+      dot.classList.add("dot");
+      if(idx === 0) dot.classList.add("active");
+      dotsContainer.appendChild(dot);
+    });
+
+    carousel.addEventListener('scroll', () => {
+      const scrollLeft = carousel.scrollLeft;
+      const width = carousel.offsetWidth;
+      const children = carousel.children;
+      let index = 0;
+      for(let i=0;i<children.length;i++){
+        const childCenter = children[i].offsetLeft + children[i].offsetWidth/2;
+        if(childCenter - scrollLeft < width/2) index = i % comercios.length;
+      }
+      document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i===index));
+    });
+  }
 }
 
-// Actualizar puntitos según scroll
-carousel.addEventListener('scroll', () => {
-  const scrollLeft = carousel.scrollLeft;
-  const width = carousel.offsetWidth;
-  const children = carousel.children;
-  let index = 0;
-  for(let i=0;i<children.length;i++){
-    const childCenter = children[i].offsetLeft + children[i].offsetWidth/2;
-    if(childCenter - scrollLeft < width/2) index = i;
+// Auto scroll continuo para escritorio
+function autoScroll() {
+  if(window.innerWidth > 768) {
+    if(!isPaused) {
+      scrollAmount += speed;
+      if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
+      if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
+    }
+    carousel.style.transform = `translateX(${-scrollAmount}px)`;
+    requestAnimationFrame(autoScroll);
   }
-  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===index));
-});
+}
 
-// Evitar scroll vertical al deslizar horizontal
-carousel.addEventListener('touchmove', (e)=>{ e.stopPropagation(); }, {passive:true});
+// Flechas escritorio
+arrowRight.addEventListener("mouseenter", () => { speed = 6; });
+arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
+arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
+arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
 </script>
 
 </body>
