@@ -98,15 +98,15 @@
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
-    padding-bottom: 10px;
+    padding: 0 15%; /* padding lateral para centrar primera y última */
+    gap: 20px;
   }
 
   .mobile-gallery::-webkit-scrollbar { display: none; }
 
   .mobile-gallery .card {
-    flex: 0 0 75%; /* tarjeta más chica para que entre todo */
+    flex: 0 0 70%; /* tarjeta más pequeña para móvil */
     scroll-snap-align: center;
-    margin: 0 12.5%; /* centrado */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -183,7 +183,7 @@ fetch('comercios/comercios.json')
 
 // ================= DESKTOP =================
 function initCarousel() {
-  const allImages = [...comercios, ...comercios, ...comercios]; // loop suave
+  const allImages = [...comercios, ...comercios, ...comercios];
   allImages.forEach((imgSrc) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
