@@ -3,259 +3,178 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comercios Adheridos</title>
+<title>Comercios Adheridos - Móvil</title>
 <style>
-body {
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  background: #f9f9f9;
-  color: #333;
-}
+  body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: #f9f9f9;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+  }
 
-h1 {
-  margin: 20px 0;
-  font-size: 2em;
-  color: #004080;
-  text-align: center;
-}
+  h1 {
+    font-size: 2em;
+    color: #004080;
+    text-align: center;
+    margin-bottom: 20px;
+  }
 
-/* ================= DESKTOP HORIZONTAL ================= */
-.carousel-container {
-  width: 100%;
-  max-width: 1300px;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 100px 0;
-  position: relative;
-  perspective: 1200px;
-}
+  .carousel-wrapper {
+    position: relative;
+    width: 90%;
+    overflow: hidden;
+  }
 
-.carousel {
-  display: flex;
-  gap: 50px;
-  transition: transform 0.2s linear;
-}
+  .carousel {
+    display: flex;
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
 
-.carousel img {
-  width: 250px;
-  height: 250px;
-  object-fit: contain;
-  border-radius: 15px;
-  flex-shrink: 0;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  cursor: pointer;
-  transform-origin: center center;
-}
+  .card {
+    flex: 0 0 80%;
+    margin: 0 10%;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    box-sizing: border-box;
+  }
 
-/* Hover */
-.carousel img.hovered {
-  transform: scale(1.7);
-  z-index: 20;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-}
+  .card img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
 
-.arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2.5em;
-  cursor: pointer;
-  user-select: none;
-  color: rgba(0,64,128,0.5);
-  transition: color 0.2s, opacity 0.3s;
-  z-index: 50;
-  padding: 5px;
-  border-radius: 50%;
-  opacity: 0;
-}
+  .card h2 {
+    font-size: 1.2em;
+    color: #004080;
+    margin: 10px 0 0 0;
+    text-align: center;
+  }
 
-.carousel-container:hover .arrow { opacity: 1; }
-.arrow:hover { color: rgba(0,64,128,1); }
-.arrow.left { left: 10px; }
-.arrow.right { right: 10px; }
+  .dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 5px;
+  }
 
-/* ================= MOBILE VERTICAL ================= */
-.vertical-carousel-container {
-  height: 80vh;
-  overflow: hidden;
-  position: relative;
-  display: none;
-  touch-action: pan-y;
-}
+  .dot {
+    width: 10px;
+    height: 10px;
+    background: #ccc;
+    border-radius: 50%;
+  }
 
-.vertical-carousel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  transition: transform 0.2s ease-out;
-}
+  .dot.active {
+    background: #004080;
+  }
 
-.vertical-carousel .card {
-  flex: 0 0 auto;
-  background: #fff;
-  border-radius: 15px;
-  padding: 10px;
-  text-align: center;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.vertical-carousel .card img {
-  width: 90%;
-  height: auto;
-  max-height: 250px;
-  object-fit: contain;
-  margin-bottom: 10px;
-}
-
-.vertical-carousel .card h3 {
-  font-size: 1em;
-  margin: 0;
-  color: #004080;
-}
-
-/* RESPONSIVE */
-@media(max-width: 900px) {
-  .carousel-container { display: none; }
-  .vertical-carousel-container { display: block; }
-}
+  @media(max-width: 500px) {
+    .card {
+      flex: 0 0 90%;
+      margin: 0 5%;
+    }
+    .card img {
+      height: 180px;
+    }
+  }
 </style>
 </head>
 <body>
 
 <h1>Comercios Adheridos</h1>
-
-<!-- DESKTOP HORIZONTAL -->
-<div class="carousel-container">
+<div class="carousel-wrapper">
   <div class="carousel" id="carousel"></div>
-  <div class="arrow left" id="arrow-left">&#9664;</div>
-  <div class="arrow right" id="arrow-right">&#9654;</div>
-</div>
-
-<!-- MOBILE VERTICAL -->
-<div class="vertical-carousel-container">
-  <div class="vertical-carousel" id="vertical-carousel"></div>
+  <div class="dots" id="dots"></div>
 </div>
 
 <script>
+const carousel = document.getElementById("carousel");
+const dotsContainer = document.getElementById("dots");
 let comercios = [];
+let currentIndex = 0;
 
-// Cargar JSON
+// Cargar imágenes desde JSON
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
     comercios = data;
-    initDesktopCarousel();
-    initMobileCarousel();
+    initCarousel();
+    updateDots();
   })
   .catch(err => console.error("Error cargando comercios:", err));
 
-/* ================= DESKTOP ================= */
-const carousel = document.getElementById("carousel");
-const arrowLeft = document.getElementById("arrow-left");
-const arrowRight = document.getElementById("arrow-right");
-let scrollAmount = 0;
-let isPaused = false;
-let speed = 1.5;
+function initCarousel() {
+  comercios.forEach((imgSrc, index) => {
+    const card = document.createElement("div");
+    card.className = "card";
 
-function initDesktopCarousel() {
-  const allImages = [...comercios, ...comercios, ...comercios];
-  allImages.forEach((imgSrc) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-    img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
-    img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
-    carousel.appendChild(img);
-  });
-  requestAnimationFrame(autoScroll);
-  arrowRight.addEventListener("mouseenter", () => { speed = 6; });
-  arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
-  arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
-  arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
-}
-
-function autoScroll() {
-  if(!isPaused) {
-    scrollAmount += speed;
-    if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
-    if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
-  }
-  carousel.style.transform = `translateX(${-scrollAmount}px)`;
-  requestAnimationFrame(autoScroll);
-}
-
-/* ================= MOBILE VERTICAL ================= */
-const verticalCarousel = document.getElementById("vertical-carousel");
-
-function initMobileCarousel() {
-  const allItems = [...comercios, ...comercios]; // loop
-  allItems.forEach(c => {
-    const card = document.createElement("div");
-    card.className = "card";
-    const img = document.createElement("img");
-    img.src = `comercios/${c}`;
     card.appendChild(img);
-    const name = document.createElement("h3");
-    name.textContent = c.replace('.jpg','');
-    card.appendChild(name);
-    verticalCarousel.appendChild(card);
+
+    const title = document.createElement("h2");
+    title.textContent = imgSrc.replace(/\.[^/.]+$/, ""); // Nombre sin extensión
+    card.appendChild(title);
+
+    carousel.appendChild(card);
+
+    // Dots
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.addEventListener("click", () => goTo(index));
+    dotsContainer.appendChild(dot);
   });
 
-  let scrollPos = 0;
-  const cardHeight = verticalCarousel.querySelector('.card').offsetHeight + 20;
+  // Touch events
+  let startX = 0;
   let isDragging = false;
-  let startY, velocity = 0, lastY, lastTime;
 
-  const container = verticalCarousel.parentElement;
-
-  container.addEventListener('touchstart', startDrag, {passive:false});
-  container.addEventListener('touchmove', drag, {passive:false});
-  container.addEventListener('touchend', endDrag);
-
-  container.addEventListener('mousedown', startDrag);
-  container.addEventListener('mousemove', drag);
-  container.addEventListener('mouseup', endDrag);
-  container.addEventListener('mouseleave', endDrag);
-
-  function startDrag(e) {
+  carousel.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
     isDragging = true;
-    startY = e.touches ? e.touches[0].clientY : e.clientY;
-    lastY = startY;
-    lastTime = Date.now();
-    velocity = 0;
-  }
+  });
 
-  function drag(e) {
+  carousel.addEventListener("touchmove", e => {
     if(!isDragging) return;
-    e.preventDefault();
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    const diff = lastY - y;
-    scrollPos += diff;
-    verticalCarousel.style.transform = `translateY(${-scrollPos}px)`;
-    const now = Date.now();
-    velocity = (lastY - y)/(now - lastTime)*16; // px per frame
-    lastY = y;
-    lastTime = now;
-  }
+    const dx = e.touches[0].clientX - startX;
+    carousel.style.transform = `translateX(${-currentIndex * 100 + dx / carousel.offsetWidth * 100}%)`;
+  });
 
-  function endDrag() {
+  carousel.addEventListener("touchend", e => {
     isDragging = false;
-    momentumScroll();
-  }
+    const dx = e.changedTouches[0].clientX - startX;
+    if(dx < -50 && currentIndex < comercios.length -1) currentIndex++;
+    if(dx > 50 && currentIndex > 0) currentIndex--;
+    updateCarousel();
+  });
+}
 
-  function momentumScroll() {
-    if(Math.abs(velocity) < 0.1) return;
-    scrollPos += velocity * 10;
-    const totalHeight = cardHeight * comercios.length;
-    // Loop infinito
-    if(scrollPos >= totalHeight) scrollPos -= totalHeight;
-    if(scrollPos < 0) scrollPos += totalHeight;
-    verticalCarousel.style.transform = `translateY(${-scrollPos}px)`;
-    velocity *= 0.95;
-    requestAnimationFrame(momentumScroll);
-  }
+function updateCarousel() {
+  carousel.style.transform = `translateX(${-currentIndex * 100}%)`;
+  updateDots();
+}
+
+function goTo(index) {
+  currentIndex = index;
+  updateCarousel();
+}
+
+function updateDots() {
+  const dots = dotsContainer.querySelectorAll(".dot");
+  dots.forEach((dot, i) => dot.classList.toggle("active", i === currentIndex));
 }
 </script>
 
