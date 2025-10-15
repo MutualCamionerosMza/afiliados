@@ -68,13 +68,10 @@ h1 {
   z-index: 50;
   padding: 5px;
   border-radius: 50%;
-  opacity: 0; /* invisibles por defecto */
+  opacity: 0;
 }
 
-.carousel-container:hover .arrow {
-  opacity: 1; /* aparecen al acercar el cursor */
-}
-
+.carousel-container:hover .arrow { opacity: 1; }
 .arrow:hover { color: rgba(0,64,128,1); }
 .arrow.left { left: 10px; }
 .arrow.right { right: 10px; }
@@ -85,13 +82,14 @@ h1 {
   overflow: hidden;
   position: relative;
   display: none;
+  touch-action: pan-y;
 }
 
 .vertical-carousel {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease-out;
 }
 
 .vertical-carousel .card {
@@ -101,7 +99,6 @@ h1 {
   padding: 10px;
   text-align: center;
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  cursor: grab;
 }
 
 .vertical-carousel .card img {
@@ -118,7 +115,7 @@ h1 {
   color: #004080;
 }
 
-/* ================= RESPONSIVE ================= */
+/* RESPONSIVE */
 @media(max-width: 900px) {
   .carousel-container { display: none; }
   .vertical-carousel-container { display: block; }
@@ -144,7 +141,7 @@ h1 {
 <script>
 let comercios = [];
 
-// Cargar JSON de comercios
+// Cargar JSON
 fetch('comercios/comercios.json')
   .then(res => res.json())
   .then(data => {
@@ -164,23 +161,17 @@ let speed = 1.5;
 
 function initDesktopCarousel() {
   const allImages = [...comercios, ...comercios, ...comercios];
-
   allImages.forEach((imgSrc) => {
     const img = document.createElement("img");
     img.src = `comercios/${imgSrc}`;
     img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
-
     img.addEventListener("mouseenter", () => { img.classList.add("hovered"); isPaused = true; });
     img.addEventListener("mouseleave", () => { img.classList.remove("hovered"); isPaused = false; });
-
     carousel.appendChild(img);
   });
-
   requestAnimationFrame(autoScroll);
-
   arrowRight.addEventListener("mouseenter", () => { speed = 6; });
   arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
-
   arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
   arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
 }
@@ -195,60 +186,75 @@ function autoScroll() {
   requestAnimationFrame(autoScroll);
 }
 
-/* ================= MOBILE ================= */
+/* ================= MOBILE VERTICAL ================= */
 const verticalCarousel = document.getElementById("vertical-carousel");
 
 function initMobileCarousel() {
-  const allItems = [...comercios, ...comercios];
+  const allItems = [...comercios, ...comercios]; // loop
   allItems.forEach(c => {
     const card = document.createElement("div");
     card.className = "card";
-
     const img = document.createElement("img");
     img.src = `comercios/${c}`;
     card.appendChild(img);
-
     const name = document.createElement("h3");
     name.textContent = c.replace('.jpg','');
     card.appendChild(name);
-
     verticalCarousel.appendChild(card);
   });
 
   let scrollPos = 0;
   const cardHeight = verticalCarousel.querySelector('.card').offsetHeight + 20;
   let isDragging = false;
-  let startY, currentScroll;
+  let startY, velocity = 0, lastY, lastTime;
 
-  verticalCarousel.parentElement.addEventListener('mousedown', startDrag);
-  verticalCarousel.parentElement.addEventListener('touchstart', startDrag);
-  verticalCarousel.parentElement.addEventListener('mouseup', endDrag);
-  verticalCarousel.parentElement.addEventListener('mouseleave', endDrag);
-  verticalCarousel.parentElement.addEventListener('touchend', endDrag);
-  verticalCarousel.parentElement.addEventListener('mousemove', drag);
-  verticalCarousel.parentElement.addEventListener('touchmove', drag);
+  const container = verticalCarousel.parentElement;
+
+  container.addEventListener('touchstart', startDrag, {passive:false});
+  container.addEventListener('touchmove', drag, {passive:false});
+  container.addEventListener('touchend', endDrag);
+
+  container.addEventListener('mousedown', startDrag);
+  container.addEventListener('mousemove', drag);
+  container.addEventListener('mouseup', endDrag);
+  container.addEventListener('mouseleave', endDrag);
 
   function startDrag(e) {
     isDragging = true;
     startY = e.touches ? e.touches[0].clientY : e.clientY;
-    currentScroll = scrollPos;
+    lastY = startY;
+    lastTime = Date.now();
+    velocity = 0;
   }
 
   function drag(e) {
     if(!isDragging) return;
+    e.preventDefault();
     const y = e.touches ? e.touches[0].clientY : e.clientY;
-    const diff = startY - y;
-    scrollPos = currentScroll + diff;
-    handleLoop();
+    const diff = lastY - y;
+    scrollPos += diff;
     verticalCarousel.style.transform = `translateY(${-scrollPos}px)`;
+    const now = Date.now();
+    velocity = (lastY - y)/(now - lastTime)*16; // px per frame
+    lastY = y;
+    lastTime = now;
   }
 
-  function endDrag() { isDragging = false; }
+  function endDrag() {
+    isDragging = false;
+    momentumScroll();
+  }
 
-  function handleLoop() {
+  function momentumScroll() {
+    if(Math.abs(velocity) < 0.1) return;
+    scrollPos += velocity * 10;
     const totalHeight = cardHeight * comercios.length;
+    // Loop infinito
     if(scrollPos >= totalHeight) scrollPos -= totalHeight;
     if(scrollPos < 0) scrollPos += totalHeight;
+    verticalCarousel.style.transform = `translateY(${-scrollPos}px)`;
+    velocity *= 0.95;
+    requestAnimationFrame(momentumScroll);
   }
 }
 </script>
