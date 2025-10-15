@@ -7,92 +7,102 @@
 <style>
   body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f0f2f5;
+    font-family: 'Arial', sans-serif;
+    background: #f9f9f9;
+    color: #333;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    min-height: 100vh;
   }
 
   h1 {
-    margin: 20px 0;
+    margin: 40px 0 20px 0;
+    font-size: 3em;
+    color: #004080;
     text-align: center;
   }
 
   .carousel-container {
-    perspective: 1200px;
-    width: 90%;
-    max-width: 900px;
-    height: 300px;
-    margin-top: 40px;
+    width: 100%;
+    max-width: 1300px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 100px 0;
     position: relative;
+    perspective: 1200px;
   }
 
   .carousel {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    transform-style: preserve-3d;
-    transition: transform 1s;
+    display: flex;
+    gap: 50px;
+    transition: transform 0.2s linear;
   }
 
   .carousel img {
-    position: absolute;
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    left: 50%;
-    top: 50%;
-    transform-origin: center center;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.5s, filter 0.5s;
-    filter: brightness(0.7);
-  }
-
-  .carousel img.active {
-    width: 220px;
-    height: 220px;
-    filter: brightness(1);
-    z-index: 10;
-  }
-
-  .carousel img:hover {
-    transform: scale(1.2);
-    filter: brightness(1);
-  }
-
-  .center-preview {
-    margin-top: 60px;
-    width: 300px;
-    height: 300px;
-    transition: all 0.5s;
-  }
-
-  .center-preview img {
-    width: 100%;
-    height: 100%;
+    width: 250px;
+    height: 250px;
     object-fit: contain;
     border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    transform-origin: center center;
+  }
+
+  /* Todas las imágenes grandes desde el inicio */
+  .carousel img {
+    transform: scale(1.5);
+    box-shadow: none;
+    z-index: 5;
+  }
+
+  /* Hover ligero */
+  .carousel img.hovered {
+    transform: scale(1.7);
+    z-index: 20;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5em;
+    cursor: pointer;
+    user-select: none;
+    color: rgba(0,64,128,0.5);
+    transition: color 0.2s, opacity 0.3s;
+    z-index: 50;
+    padding: 5px;
+    border-radius: 50%;
+    opacity: 0; /* invisibles por defecto */
+  }
+
+  .carousel-container:hover .arrow {
+    opacity: 1; /* aparecen al acercar el cursor */
+  }
+
+  .arrow:hover {
+    color: rgba(0,64,128,1);
+  }
+
+  .arrow.left { left: 10px; }
+  .arrow.right { right: 10px; }
+
+  @media(max-width: 900px) {
+    .carousel img { width: 200px; height: 200px; transform: scale(1.4); }
   }
 
   @media(max-width: 600px) {
-    .carousel img {
-      width: 80px;
-      height: 80px;
-    }
+    .carousel img { width: 160px; height: 160px; transform: scale(1.3); }
+  }
 
-    .carousel img.active {
-      width: 160px;
-      height: 160px;
-    }
-
-    .center-preview {
-      width: 200px;
-      height: 200px;
-      margin-top: 40px;
-    }
+  @media(max-width: 400px) {
+    .carousel img { width: 140px; height: 140px; transform: scale(1.2); }
   }
 </style>
 </head>
@@ -102,64 +112,69 @@
 
 <div class="carousel-container">
   <div class="carousel" id="carousel"></div>
-</div>
-
-<div class="center-preview" id="centerPreview">
-  <img src="" alt="Comercio seleccionado" id="mainImage">
+  <div class="arrow left" id="arrow-left">&#9664;</div>
+  <div class="arrow right" id="arrow-right">&#9654;</div>
 </div>
 
 <script>
-const comercios = [
-  "comercio1.jpg",
-  "comercio2.jpg",
-  "comercio3.jpg",
-  "comercio4.jpg",
-  "comercio5.jpg"
-  // Agregá más imágenes de tu carpeta /assets/comercios/
-];
-
 const carousel = document.getElementById("carousel");
-const mainImage = document.getElementById("mainImage");
+const arrowLeft = document.getElementById("arrow-left");
+const arrowRight = document.getElementById("arrow-right");
+let comercios = [];
+let scrollAmount = 0;
+let isPaused = false;
+let speed = 1.5;
 
-let activeIndex = 0;
+// Cargar imágenes desde JSON
+fetch('comercios/comercios.json')
+  .then(res => res.json())
+  .then(data => {
+    comercios = data;
+    initCarousel();
+    requestAnimationFrame(autoScroll);
+  })
+  .catch(err => console.error("Error cargando comercios:", err));
 
-// Crear imágenes en el carrusel
-comercios.forEach((imgSrc, index) => {
-  const img = document.createElement("img");
-  img.src = `assets/comercios/${imgSrc}`;
-  if(index === activeIndex) img.classList.add("active");
-  img.addEventListener("click", () => {
-    activeIndex = index;
-    updateCarousel();
+function initCarousel() {
+  const allImages = [...comercios, ...comercios, ...comercios]; // loop suave
+
+  allImages.forEach((imgSrc) => {
+    const img = document.createElement("img");
+    img.src = `comercios/${imgSrc}`;
+    img.onerror = () => console.warn(`No se pudo cargar la imagen: ${img.src}`);
+
+    // Hover ligero
+    img.addEventListener("mouseenter", () => {
+      img.classList.add("hovered");
+      isPaused = true; // pausa scroll
+    });
+    img.addEventListener("mouseleave", () => {
+      img.classList.remove("hovered");
+      isPaused = false; // continua scroll
+    });
+
+    carousel.appendChild(img);
   });
-  carousel.appendChild(img);
-});
-
-// Función para actualizar el carrusel
-function updateCarousel() {
-  const imgs = carousel.querySelectorAll("img");
-  const radius = 300; // radio del semicirculo
-  const angleStep = 360 / imgs.length;
-
-  imgs.forEach((img, i) => {
-    img.classList.remove("active");
-    const offset = i - activeIndex;
-    const angle = offset * angleStep * Math.PI / 180;
-    img.style.transform = `translateX(${radius * Math.sin(angle)}px) translateZ(${radius * Math.cos(angle)}px) translateY(-50%)`;
-  });
-
-  imgs[activeIndex].classList.add("active");
-  mainImage.src = `assets/comercios/${comercios[activeIndex]}`;
 }
 
-// Inicializar
-updateCarousel();
+// Auto scroll continuo
+function autoScroll() {
+  if(!isPaused) {
+    scrollAmount += speed;
+    if(scrollAmount >= carousel.scrollWidth / 3) scrollAmount = 0;
+    if(scrollAmount < 0) scrollAmount = carousel.scrollWidth / 3;
+  }
+  carousel.style.transform = `translateX(${-scrollAmount}px)`;
+  requestAnimationFrame(autoScroll);
+}
 
-// Desplazamiento automático
-setInterval(() => {
-  activeIndex = (activeIndex + 1) % comercios.length;
-  updateCarousel();
-}, 3000); // Cambia cada 3 segundos
+// Flechas para acelerar scroll
+arrowRight.addEventListener("mouseenter", () => { speed = 6; });
+arrowRight.addEventListener("mouseleave", () => { speed = 1.5; });
+
+arrowLeft.addEventListener("mouseenter", () => { speed = -6; });
+arrowLeft.addEventListener("mouseleave", () => { speed = 1.5; });
+
 </script>
 
 </body>
