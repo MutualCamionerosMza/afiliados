@@ -144,7 +144,6 @@
       <div id="resultado"></div>
 
       <button id="descargar" style="display: none;">Ver Credencial</button>
-      <button id="comercios">Comercios Adheridos</button>
     </div>
 
     <div class="logo-bottom">
@@ -156,7 +155,6 @@
     const form = document.getElementById('formulario');
     const resultadoDiv = document.getElementById('resultado');
     const descargarBtn = document.getElementById('descargar');
-    const comerciosBtn = document.getElementById('comercios');
     let dniAfiliado = '';
 
     const urlBase = 'https://verificacion-afiliados-production.up.railway.app';
@@ -203,11 +201,6 @@
     descargarBtn.addEventListener('click', () => {
       if (!dniAfiliado) return;
       window.open(`${urlBase}/credencial?dni=${dniAfiliado}`, '_blank');
-    });
-
-    // NUEVO: Abrir comercios adheridos en nueva pestaña
-    comerciosBtn.addEventListener('click', () => {
-      window.open('comercios.html', '_blank');
     });
   </script>
 </body>
